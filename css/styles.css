@@ -1678,6 +1678,113 @@ body:not(.admin-body) .site-footer .brand__mark { background: #e3c44d; }
   body:not(.admin-body) .barber-card__art { height: 290px; }
 }
 
+/* ---------- Ajustes de uso en celular ---------- */
+.mobile-booking-bar { display: none; }
+@media (max-width: 720px) {
+  body:not(.admin-body) { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  body:not(.admin-body) .site-header__inner { min-height: 66px; gap: 8px; }
+  body:not(.admin-body) .site-header.is-scrolled { box-shadow: 0 4px 18px rgba(48,47,37,.06); }
+  body:not(.admin-body) .site-header .brand { gap: 8px; }
+  body:not(.admin-body) .site-header .brand__mark { width: 36px; height: 36px; font-size: 21px; }
+  body:not(.admin-body) .site-header .brand__name { font-size: 19px; }
+  body:not(.admin-body) .site-header .brand__sub { font-size: 7px; }
+  body:not(.admin-body) .site-header .header-actions { gap: 6px; }
+  body:not(.admin-body) .site-header .header-actions [data-open-lookup] { display: none; }
+  body:not(.admin-body) .site-header .header-actions .btn--primary { min-height: 36px; padding-inline: 11px; font-size: 9px; letter-spacing: .08em; }
+  body:not(.admin-body) .site-header .nav-toggle { width: 38px; height: 38px; }
+  body:not(.admin-body) .site-nav { top: 66px; background: #f3eedf; box-shadow: 0 20px 30px rgba(48,47,37,.12); }
+  body:not(.admin-body) .site-nav__link { border-color: rgba(48,47,37,.1); }
+  body:not(.admin-body) .hero { padding-top: 22px; padding-bottom: 44px; }
+  body:not(.admin-body) .hero__copy { padding-block: 8px; }
+  body:not(.admin-body) .hero__title { font-size: clamp(48px, 12.5vw, 68px); line-height: .92; }
+  body:not(.admin-body) .hero__lead { max-width: 42ch; margin-top: 17px; font-size: 14px; line-height: 1.65; }
+  body:not(.admin-body) .hero__actions { gap: 8px; margin-top: 20px; }
+  body:not(.admin-body) .hero__actions .btn { min-height: 44px; padding-inline: 12px; font-size: 9px; letter-spacing: .08em; white-space: normal; }
+  body:not(.admin-body) .hero__meta { gap: 12px 20px; margin-top: 24px; padding-top: 16px; }
+  body:not(.admin-body) .hero__stat strong { font-size: 28px; }
+  body:not(.admin-body) .hero__stat span { font-size: 8px; letter-spacing: .08em; }
+  body:not(.admin-body) .hero__signature { font-size: 15px; }
+  body:not(.admin-body) .hero__visual { width: calc(100% - 18px); min-height: 390px; }
+  body:not(.admin-body) .hero-card { left: -8px; bottom: 12px; width: min(260px, 82%); padding: 15px; border-radius: 14px; }
+  body:not(.admin-body) .hero-card__label { font-size: 8px; letter-spacing: .12em; }
+  body:not(.admin-body) .hero-card__hours { font-size: 32px; }
+  body:not(.admin-body) .hero-card__hours small { font-size: 12px; }
+  body:not(.admin-body) .hero-card__row { font-size: 10px; }
+  body:not(.admin-body) .hero__visual-note { padding: 7px 10px; font-size: 8px; letter-spacing: .08em; }
+  body:not(.admin-body) .hero__visual-note--top { right: -7px; }
+  body:not(.admin-body) .hero__visual-note--bottom { right: -9px; }
+  body:not(.admin-body) .ticker { padding-block: 13px; }
+  body:not(.admin-body) .ticker__item { gap: 20px; font-size: 9px; }
+  body:not(.admin-body) .ticker__track { gap: 20px; }
+  body:not(.admin-body) .section { padding-block: 54px; }
+  body:not(.admin-body) .section-head { gap: 10px; margin-bottom: 22px; }
+  body:not(.admin-body) .section-head h2,
+  body:not(.admin-body) .intro-copy h2 { font-size: clamp(36px, 9vw, 48px); }
+  body:not(.admin-body) .section-head p { font-size: 12.5px; }
+  body:not(.admin-body) .services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  body:not(.admin-body) .service-card { min-height: 220px; padding: 15px 13px 13px; border-radius: 13px; }
+  body:not(.admin-body) .service-card__num { font-size: 8px; }
+  body:not(.admin-body) .service-card h3 { margin-top: 12px; font-size: 22px; line-height: 1.02; }
+  body:not(.admin-body) .service-card p { font-size: 11px; line-height: 1.45; }
+  body:not(.admin-body) .service-card__foot { align-items: flex-start; flex-direction: column; gap: 8px; margin-top: 12px; padding-top: 10px; }
+  body:not(.admin-body) .service-card__price { font-size: 27px; }
+  body:not(.admin-body) .service-card__time { font-size: 9px; }
+  body:not(.admin-body) .barbers-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  body:not(.admin-body) .barber-card { border-radius: 14px; }
+  body:not(.admin-body) .barber-card__art { height: 205px; }
+  body:not(.admin-body) .barber-card__body { padding: 13px 12px; }
+  body:not(.admin-body) .barber-card__body h3 { font-size: 22px; }
+  body:not(.admin-body) .barber-card__role { font-size: 8px; letter-spacing: .1em; }
+  body:not(.admin-body) .barber-card__spec { font-size: 11px; }
+  body:not(.admin-body) .barber-card__foot { align-items: flex-start; flex-direction: column; gap: 9px; margin-top: 12px; padding-top: 10px; }
+  body:not(.admin-body) .intro-grid { gap: 22px; }
+  body:not(.admin-body) .intro-copy p { font-size: 13px; }
+  body:not(.admin-body) .intro-points > div { padding-block: 11px; }
+  body:not(.admin-body) .editorial-banner__inner { min-height: 230px; gap: 16px; padding-block: 30px; }
+  body:not(.admin-body) .editorial-banner__inner p { font-size: clamp(34px, 9vw, 46px); }
+  body:not(.admin-body) .editorial-banner__flower { left: auto; right: -8%; top: 8px; font-size: 170px; }
+  body:not(.admin-body) .btn--dark { min-height: 44px; font-size: 9px; }
+  body:not(.admin-body) .steps { grid-template-columns: 1fr; }
+  body:not(.admin-body) .step { padding: 18px 0; border-top: 1px solid var(--line); border-right: 0; }
+  body:not(.admin-body) .step__num { font-size: 50px; }
+  body:not(.admin-body) .step h3 { margin-top: 6px; font-size: 25px; }
+  body:not(.admin-body) .step p { max-width: 38ch; font-size: 12.5px; }
+  body:not(.admin-body) .contact-grid { gap: 9px; }
+  body:not(.admin-body) .contact-panel,
+  body:not(.admin-body) .contact-block { border-radius: 14px; }
+  body:not(.admin-body) .contact-panel h2 { font-size: 42px; }
+  body:not(.admin-body) .hours__row { font-size: 12px; }
+  body:not(.admin-body) .contact-actions .btn { flex: 1; }
+  body:not(.admin-body) .footer-grid { gap: 18px; }
+  body:not(.admin-body) .footer-bottom { padding-bottom: 10px; }
+  body:not(.admin-body) .mobile-booking-bar {
+    position: fixed;
+    z-index: 60;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: block;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(48,47,37,.1);
+    background: rgba(243,238,223,.94);
+    backdrop-filter: blur(14px);
+  }
+  body:not(.admin-body) .mobile-booking-bar .btn { width: 100%; min-height: 46px; border-radius: 99px; }
+  body.no-scroll .mobile-booking-bar { display: none; }
+}
+@media (max-width: 370px) {
+  body:not(.admin-body) .site-header .header-actions .btn--primary { font-size: 8px; padding-inline: 8px; }
+  body:not(.admin-body) .hero__title { font-size: 46px; }
+  body:not(.admin-body) .services-grid,
+  body:not(.admin-body) .barbers-grid { grid-template-columns: 1fr; }
+  body:not(.admin-body) .service-card { min-height: 195px; }
+  body:not(.admin-body) .barber-card__art { height: 265px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:not(.admin-body) .ticker__track { animation: none; }
+  body:not(.admin-body) *, body:not(.admin-body) *::before, body:not(.admin-body) *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
 /* ============================================================
    RESPONSIVE MÓVIL
    Ajustes específicos para teléfono: navegación, reserva a
