@@ -1,0 +1,1024 @@
+/* ============================================================
+   APP — lógica del sitio público
+   ============================================================ */
+(function () {
+  const C = window.SALON_CONFIG;
+  const U = window.UI;
+  const S = window.Store;
+
+  const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const safePhotoUrl = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    try {
+      const url = new URL(raw, location.href);
+      if (!["http:", "https:"].includes(url.protocol)) return "";
+      const segments = url.pathname.split("/").filter(Boolean);
+      const blobIndex = segments.indexOf("blob");
+      if (url.hostname === "github.com" && blobIndex >= 2 && segments.length > blobIndex + 1) {
+        if (segments[0].toLowerCase() === "charlea-in" && segments[1].toLowerCase() === "salon-demo") {
+          url.hostname = "charlea-in.github.io";
+          url.pathname = "/Salon-demo/" + segments.slice(blobIndex + 2).join("/");
+        } else {
+          url.hostname = "raw.githubusercontent.com";
+          url.pathname = "/" + segments[0] + "/" + segments[1] + "/" + segments.slice(blobIndex + 1).join("/");
+        }
+        url.search = "";
+      }
+      if (/\/assets\/estilistas\/.*\.(?:jpe?g|png)$/i.test(url.pathname)) {
+        url.pathname = url.pathname.replace(/\.(?:jpe?g|png)$/i, ".webp");
+      }
+      return url.href;
+    } catch (_) { return ""; }
+  };
+
+  const state = {
+    services: [...C.services],
+    barbers: [...C.barbers],
+    config: { ...C.contact },
+    booking: null,
+    lookup: { identity: null, client: null, results: null, error: "", confirmId: null, loading: false },
+  };
+
+  document.addEventListener("DOMContentLoaded", init);
+
+  async function init() {
+    wireStatic();
+    renderAll();
+    setupReveal();
+    $("#year").textContent = new Date().getFullYear();
+    const years = Math.max(1, new Date().getFullYear() - Number(C.brand.established || new Date().getFullYear()));
+    const yearsEl = $("#stat-years");
+    if (yearsEl) yearsEl.textContent = years;
+
+    try {
+      const data = await S.bootstrap();
+      if (data.services && data.services.length) state.services = data.services;
+      if (data.barbers && data.barbers.length) state.barbers = data.barbers;
+      state.config = data.config || state.config;
+      applyConfig(state.config);
+      renderAll();
+      renderHeroNext();
+    } catch (error) {
+      console.error(error);
+      U.toast("No pudimos conectar con la agenda en línea. Intenta de nuevo en un momento.", "error", 5200);
+    }
+
+    setInterval(renderHeroCard, 60000);
+  }
+
+  const $ = (sel) => U.$(sel);
+  const $$ = (sel) => U.$$(sel);
+
+  /* ---------- Render general ---------- */
+  function renderAll() {
+    renderTicker();
+    renderServices();
+    renderBarbers();
+    renderHours();
+    renderHeroCard();
+    $("#stat-stylists").textContent = state.barbers.length || C.barbers.length;
+  }
+
+  function renderTicker() {
+    const items = state.services
+      .map((s) => `<span class="ticker__item">${U.esc(s.nombre)} <b>${U.money(s.precio)}</b></span>`)
+      .join("");
+    $("#ticker-track").innerHTML = items + items;
+  }
+
+  function renderServices() {
+    const list = [...state.services].sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0));
+    $("#services-grid").innerHTML = list
+      .map(
+        (s, i) => `
+        <article class="service-card">
+          <span class="service-card__num">${String(i + 1).padStart(2, "0")}</span>
+          <h3>${U.esc(s.nombre)}</h3>
+          <p>${U.esc(s.descripcion || "")}</p>
+          <div class="service-card__foot">
+            <div class="service-card__price">${U.money(s.precio)}<small>${Number(s.duracion_min)} min</small></div>
+            <span class="service-card__time">Reservar →</span>
+          </div>
+          <button class="service-card__cta" type="button" data-book-service="${U.esc(s.id)}"
+            aria-label="Reservar ${U.esc(s.nombre)}"></button>
+        </article>`
+      )
+      .join("");
+  }
+
+  function renderBarbers() {
+    $("#stylists-grid").innerHTML = state.barbers
+      .map(
+        (b) => `
+        <article class="barber-card" style="--barber-color:${U.esc(b.color || "#C9A227")}">
+          <div class="barber-card__art">
+            ${safePhotoUrl(b.photo_url) ? `<img class="barber-card__photo" src="${U.esc(safePhotoUrl(b.photo_url))}" alt="Foto de ${U.esc(b.nombre)}" loading="lazy" onerror="this.remove();this.parentElement.querySelector('.barber-card__initials').style.visibility='visible'">` : ""}
+            <span class="barber-card__tag">${U.esc(b.rol || "Estilista")}</span>
+            <span class="barber-card__initials" style="visibility:${safePhotoUrl(b.photo_url) ? "hidden" : "visible"}">${U.initials(b.nombre)}</span>
+          </div>
+          <div class="barber-card__body">
+            <h3>${U.esc(b.nombre)}</h3>
+            <div class="barber-card__role">${U.esc(b.especialidad || "Estilista")}</div>
+            <p class="barber-card__spec">${U.esc(b.rol || "")}</p>
+            <div class="barber-card__foot">
+              <button class="link-arrow" type="button" data-book-barber="${U.esc(b.id)}">
+                Reservar con ${U.esc(String(b.nombre).split(" ")[0])}
+              </button>
+            </div>
+          </div>
+        </article>`
+      )
+      .join("");
+  }
+
+  function renderHours() {
+    const sch = S.schedule;
+    const today = new Date().getDay();
+    $("#hours-list").innerHTML = DAY_NAMES.map((name, i) => {
+      const closed = sch.closedDays.includes(i);
+      return `<div class="hours__row ${closed ? "hours__row--closed" : ""}">
+        <span>${name}${i === today ? " · hoy" : ""}</span>
+        <b>${closed ? "Cerrado" : `${sch.open} – ${sch.close}`}</b>
+      </div>`;
+    }).join("");
+  }
+
+  function renderHeroCard() {
+    const sch = S.schedule;
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    const closedToday = sch.closedDays.includes(now.getDay());
+    const isOpen = !closedToday && mins >= sch.openMin && mins < sch.closeMin;
+
+    $("#hero-hours").innerHTML = `${sch.open} <small>— ${sch.close}</small>`;
+
+    const status = $("#hero-status");
+    if (isOpen) {
+      status.textContent = "Abierto ahora";
+      status.className = "status-dot status-dot--open";
+    } else if (closedToday) {
+      status.textContent = "Cerrado hoy";
+      status.className = "status-dot status-dot--closed";
+    } else if (mins < sch.openMin) {
+      status.textContent = `Abre ${sch.open}`;
+      status.className = "status-dot status-dot--closed";
+    } else {
+      status.textContent = "Cerrado";
+      status.className = "status-dot status-dot--closed";
+    }
+
+    $("#hero-services").innerHTML = state.services
+      .slice(0, 3)
+      .map(
+        (s) => `<div class="hero-card__row"><span>${U.esc(s.nombre)}</span><b>${U.money(s.precio)}</b></div>`
+      )
+      .join("");
+  }
+
+  async function renderHeroNext() {
+    const el = $("#hero-next");
+    if (!el || !state.services.length) return;
+    const service = state.services[0];
+    try {
+      const today = U.todayISO();
+      const todayRes = await S.availability({ date: today, serviceId: service.id, barberId: "any" });
+      if (todayRes.slots && todayRes.slots.length) {
+        el.textContent = `Hoy ${todayRes.slots[0].time}`;
+        return;
+      }
+      for (let i = 1; i <= 14; i++) {
+        const iso = U.addDays(today, i);
+        if (S.isClosed(iso)) continue;
+        const res = await S.availability({ date: iso, serviceId: service.id, barberId: "any" });
+        if (res.slots && res.slots.length) {
+          el.textContent = `${U.relativeDay(iso)} ${res.slots[0].time}`;
+          return;
+        }
+      }
+      el.textContent = "Escríbenos";
+    } catch (error) {
+      el.textContent = "Escríbenos";
+    }
+  }
+
+  /* ---------- Configuración de negocio ---------- */
+  function svWhatsAppNumber(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+    if (digits.length === 8) return `503${digits}`;
+    return digits.length === 11 && digits.startsWith("503") ? digits : "";
+  }
+
+  function svPhoneDisplay(value) {
+    const local = U.normalizePhone(value);
+    return local.length === 8 ? `+503 ${local.slice(0, 4)} ${local.slice(4)}` : "";
+  }
+
+  function applyConfig(config) {
+    const businessName = String(config.nombre_negocio || C.brand.name).trim();
+    const brandWords = businessName.split(/\s+/);
+    const firstName = brandWords.shift() || businessName;
+    const secondName = brandWords.join(" ") || "Salón";
+    const map = {
+      nombre_negocio: businessName,
+      brand_first: firstName,
+      brand_second: secondName,
+      direccion: config.direccion || C.contact.address,
+      telefono: svPhoneDisplay(config.telefono || C.contact.phone),
+      email: config.email || C.contact.email,
+      ciudad: config.ciudad || C.brand.city,
+      anio: C.brand.established,
+      monograma: C.brand.monogram || (brandWords.length ? `${firstName[0]}${brandWords[0][0]}` : firstName.slice(0, 2)),
+    };
+    $$("[data-config]").forEach((el) => {
+      const value = map[el.dataset.config];
+      el.textContent = value || "";
+      if (["direccion", "telefono", "email"].includes(el.dataset.config)) el.hidden = !value;
+    });
+
+    const normalizedPhone = U.normalizePhone(config.telefono || C.contact.phone);
+    const phoneDigits = normalizedPhone.length === 8 ? normalizedPhone : "";
+    const waDigits = svWhatsAppNumber(config.whatsapp || C.contact.whatsapp);
+    const email = config.email || C.contact.email;
+    const instagram = String(config.instagram || C.contact.instagram).replace(/^@/, "");
+    const address = config.direccion || C.contact.address;
+    const addressBlock = $("[data-contact-address]");
+    if (addressBlock) addressBlock.hidden = !address;
+    const contactFooter = $("[data-contact-footer]");
+    if (contactFooter) contactFooter.hidden = !(address || phoneDigits || email);
+
+    $$('[data-config-link="phone"]').forEach((a) => {
+      a.href = phoneDigits ? `tel:+503${phoneDigits}` : "#";
+      a.hidden = !phoneDigits;
+    });
+    $$('[data-config-link="email"]').forEach((a) => {
+      a.href = email ? `mailto:${email}` : "#";
+      a.textContent = email || "";
+      a.hidden = !email;
+    });
+    $$('[data-config-link="instagram"]').forEach((a) => {
+      a.href = `https://instagram.com/${instagram}`;
+      if (/^@/.test(a.textContent.trim())) a.textContent = `@${instagram}`;
+    });
+    $$('[data-config-link="maps"]').forEach((a) => {
+      a.href = config.maps_url || `https://maps.google.com/?q=${encodeURIComponent(address)}`;
+      a.hidden = !address;
+    });
+
+    document.title = `${businessName} — Reserva tu cita`;
+    const description = document.querySelector('meta[name="description"]');
+    if (description) description.content = `${businessName} en ${config.ciudad || C.brand.city}. Consulta servicios y reserva tu cita en línea.`;
+    $$(".brand").forEach((el) => {
+      el.setAttribute("aria-label", `${businessName}, inicio`);
+    });
+
+    const waMessage = encodeURIComponent(`Hola, quiero reservar una cita en ${config.nombre_negocio || C.brand.name}.`);
+    const waLink = waDigits ? `https://wa.me/${waDigits}?text=${waMessage}` : "#";
+    const wa = $("#whatsapp-link");
+    if (wa) {
+      wa.href = waLink;
+      wa.hidden = !waDigits;
+    }
+    const phoneLink = $("#phone-link");
+    if (phoneLink) {
+      phoneLink.href = phoneDigits ? `tel:+503${phoneDigits}` : "#";
+      phoneLink.hidden = !phoneDigits;
+    }
+  }
+
+  /* ---------- Reserva ---------- */
+  function nextOpenDate() {
+    const today = U.todayISO();
+    const { closeMin, slotMinutes, leadMinutes } = S.schedule;
+    // Si ya no alcanza a empezar ningún turno hoy, la reserva arranca mañana.
+    const start = U.nowMinutes() + (leadMinutes || 0) >= closeMin - (slotMinutes || 30) ? 1 : 0;
+    for (let i = start; i <= 21; i++) {
+      const iso = U.addDays(today, i);
+      if (!S.isClosed(iso)) return iso;
+    }
+    return today;
+  }
+
+  function openBooking(serviceId = null, barberId = "any") {
+    if (!state.services.length) {
+      U.toast("No hay servicios disponibles por el momento.", "error");
+      return;
+    }
+    state.booking = {
+      step: serviceId ? 2 : 1,
+      serviceId: serviceId || null,
+      barberId: barberId || "any",
+      date: nextOpenDate(),
+      time: null,
+      assignedBarber: null,
+      availability: null,
+      loading: false,
+      result: null,
+      client: { nombre: "", telefono: "", email: "", notas: "" },
+      clientVerification: null,
+      clientLookup: { open: false, loading: false, code: "", nombre: "", telefono: "", message: "", isError: false },
+      reqToken: 0,
+    };
+    renderBooking();
+    U.openModal("#booking-modal");
+  }
+
+  function service() {
+    return state.services.find((s) => s.id === state.booking.serviceId) || null;
+  }
+
+  function barberById(id) {
+    return state.barbers.find((b) => b.id === id) || null;
+  }
+
+  function canContinue() {
+    const b = state.booking;
+    if (!b) return false;
+    if (b.step === 1) return !!b.serviceId;
+    if (b.step === 2) return !!b.date;
+    if (b.step === 3) return !!b.time;
+    if (b.step === 4) return true;
+    return false;
+  }
+
+  function renderBooking() {
+    const b = state.booking;
+    if (!b) return;
+    const isSuccess = b.step === 5;
+    const svc = service();
+
+    $$("#booking-stepper .stepper__item").forEach((item) => {
+      const n = Number(item.dataset.step);
+      item.classList.toggle("is-done", isSuccess || b.step > n);
+      item.classList.toggle("is-active", !isSuccess && b.step === n);
+    });
+
+    const titles = {
+      1: ["Elige tu servicio", "Precio y duración visibles antes de confirmar."],
+      2: ["Profesional y día", "Elige a tu estilista de confianza o deja que te asignemos una."],
+      3: ["Elige la hora", svc ? `${svc.nombre} · ${svc.duracion_min} min` : "Horarios disponibles."],
+      4: ["Tus datos", "Solo lo necesario para confirmar tu cita."],
+      5: ["Cita reservada", "Te contactaremos por WhatsApp para confirmar."],
+    };
+    $("#booking-title").textContent = titles[b.step][0];
+    $("#booking-sub").textContent = titles[b.step][1];
+
+    if (b._lastStep !== b.step) {
+      b._lastStep = b.step;
+      requestAnimationFrame(() => {
+        const dialog = $("#booking-modal .modal__dialog");
+        if (dialog) dialog.scrollTop = 0;
+      });
+    }
+
+    $("#booking-body").innerHTML = isSuccess ? successHtml() : stepHtml();
+    $("#booking-summary").innerHTML = summaryHtml();
+
+    const totalEl = $("#booking-total");
+    if (totalEl) {
+      const amount = isSuccess ? b.result.precio : svc ? svc.precio : 0;
+      totalEl.innerHTML = amount ? `<b>${U.money(amount)}</b>Total` : "";
+    }
+
+    const nav = $("#booking-nav");
+    nav.style.display = isSuccess ? "none" : "flex";
+    $("#booking-back").style.visibility = b.step === 1 ? "hidden" : "visible";
+    const next = $("#booking-next");
+    next.textContent = b.step === 4 ? "Confirmar cita" : "Continuar →";
+    next.disabled = !canContinue() || b.loading;
+  }
+
+  function stepHtml() {
+    const b = state.booking;
+    const svc = service();
+
+    if (b.step === 1) {
+      return `<div class="option-grid">${state.services
+        .map(
+          (s) => `<button class="option" type="button" data-pick-service="${U.esc(s.id)}" aria-pressed="${b.serviceId === s.id}">
+            <span class="option__title">${U.esc(s.nombre)}</span>
+            <span class="option__meta"><span>${Number(s.duracion_min)} min</span><b>${U.money(s.precio)}</b></span>
+          </button>`
+        )
+        .join("")}</div>`;
+    }
+
+    if (b.step === 2) {
+      const anySelected = b.barberId === "any";
+      const barberOptions = `<button class="option option--barber" type="button" data-pick-barber="any" aria-pressed="${anySelected}">
+          <span class="avatar" style="background:#f7e3e3;color:#3d2b2b">AU</span>
+          <span><span class="option__title">Cualquier estilista</span><span class="option__sub">La primera disponible</span></span>
+        </button>` +
+        state.barbers
+          .map(
+            (barber) => `<button class="option option--barber" type="button" data-pick-barber="${U.esc(barber.id)}" aria-pressed="${b.barberId === barber.id}">
+              <span class="avatar" style="background:${U.esc(barber.color || "#C9A227")}">${U.initials(barber.nombre)}${safePhotoUrl(barber.photo_url) ? `<img src="${U.esc(safePhotoUrl(barber.photo_url))}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span>
+              <span><span class="option__title">${U.esc(barber.nombre)}</span><span class="option__sub">${U.esc(barber.especialidad || "")}</span></span>
+            </button>`
+          )
+          .join("");
+
+      const days = Array.from({ length: 21 }, (_, i) => U.addDays(U.todayISO(), i));
+      const chips = days
+        .map((iso) => {
+          const closed = S.isClosed(iso);
+          return `<button class="date-chip" type="button" data-pick-date="${iso}" aria-pressed="${b.date === iso}" ${closed ? "disabled" : ""}>
+            <span class="date-chip__dow">${U.weekdayShort(iso)}</span>
+            <span class="date-chip__day">${U.parseISO(iso).getDate()}</span>
+            <span class="date-chip__mon">${U.monthShort(iso)}</span>
+          </button>`;
+        })
+        .join("");
+
+      return `<div class="option-grid">${barberOptions}</div>
+        <div class="slot-group">
+          <div class="slot-group__label">Elige el día</div>
+          <div class="date-strip">${chips}</div>
+        </div>`;
+    }
+
+    if (b.step === 3) {
+      if (b.loading) {
+        return `<div class="slot-grid">${Array.from({ length: 8 })
+          .map(() => `<div class="skeleton skeleton--slot"></div>`)
+          .join("")}</div>`;
+      }
+      const av = b.availability;
+      if (!av || !av.slots || !av.slots.length) {
+        const waNumber = svWhatsAppNumber(state.config.whatsapp || C.contact.whatsapp);
+        const wa = waNumber ? `<div style="margin-top:16px"><a class="btn btn--outline btn--sm" href="https://wa.me/${waNumber}" target="_blank" rel="noopener">Escribir por WhatsApp</a></div>` : "";
+        return `<div class="empty-state">
+          <strong>${av && av.closed ? "Ese día está cerrado" : "No quedan horarios para este día"}</strong>
+          ${waNumber ? "Prueba con otra fecha, otra estilista o escríbenos por WhatsApp." : "Prueba con otra fecha u otra estilista."}
+          ${wa}
+        </div>`;
+      }
+      const groups = [
+        { label: "Mañana", from: 0, to: 13 * 60 },
+        { label: "Tarde", from: 13 * 60, to: 17 * 60 },
+        { label: "Noche", from: 17 * 60, to: 24 * 60 },
+      ];
+      return groups
+        .map((g) => {
+          const slots = av.slots.filter((s) => {
+            const m = U.minutesFromTime(s.time);
+            return m >= g.from && m < g.to;
+          });
+          if (!slots.length) return "";
+          return `<div class="slot-group">
+            <div class="slot-group__label">${g.label}</div>
+            <div class="slot-grid">${slots
+              .map(
+                (s) => `<button class="slot" type="button" data-pick-time="${s.time}" aria-pressed="${b.time === s.time}">${s.time}</button>`
+              )
+              .join("")}</div>
+          </div>`;
+        })
+        .join("");
+    }
+
+    if (b.step === 4) {
+      const client = b.client || {};
+      const returningClientHtml = b.clientVerification
+        ? `<div class="field-hint field-hint--success" role="status">Cliente encontrado: <b>${U.esc(b.clientVerification.codigo_cliente)}</b>. La cita se asociará a tu historial. <button class="link-arrow" type="button" data-clear-client-verification>Usar otros datos</button></div>`
+        : `<div class="returning-client">
+            <button class="link-arrow" type="button" data-toggle-client-lookup>¿Ya eres cliente?</button>
+            <div class="returning-client__form" ${b.clientLookup.open ? "" : "hidden"}>
+              <p class="field-hint">Ingresa tu código de cliente, nombre y teléfono para encontrar tu perfil.</p>
+              <form id="returning-client-form" class="form-grid">
+                <label class="field"><span class="field__label">Código de cliente</span><input class="input" name="codigo_cliente" value="${U.esc(b.clientLookup.code)}" placeholder="AS-01" autocomplete="off" required></label>
+                <label class="field"><span class="field__label">Nombre completo</span><input class="input" name="nombre" value="${U.esc(b.clientLookup.nombre)}" autocomplete="name" required></label>
+                <label class="field"><span class="field__label">Teléfono salvadoreño (8 dígitos)</span><input class="input" name="telefono" type="tel" inputmode="numeric" value="${U.esc(b.clientLookup.telefono)}" placeholder="00000000" autocomplete="tel" required></label>
+                <div class="field field--full"><button class="btn btn--outline btn--sm" type="submit" ${b.clientLookup.loading ? "disabled" : ""}>${b.clientLookup.loading ? "Buscando…" : "Buscar mi perfil"}</button></div>
+                ${b.clientLookup.message ? `<div class="field field--full field-hint ${b.clientLookup.isError ? "field-hint--error" : "field-hint--success"}" role="status">${U.esc(b.clientLookup.message)}${b.clientLookup.isError ? ` <button class="link-arrow" type="button" data-new-client-mode>Continuar como cliente nuevo</button>` : ""}</div>` : ""}
+              </form>
+            </div>
+          </div>`;
+      return `<div class="form-grid">
+        <div class="field field--full">
+          <label for="bk-nombre">Nombre completo *</label>
+          <input class="input" id="bk-nombre" name="nombre" type="text" autocomplete="name" value="${U.esc(client.nombre || "")}" placeholder="Tu nombre" required>
+        </div>
+        <div class="field">
+          <label for="bk-tel">Teléfono *</label>
+          <input class="input" id="bk-tel" name="telefono" type="tel" inputmode="tel" autocomplete="tel" value="${U.esc(client.telefono || "")}" placeholder="0000 0000" required>
+        </div>
+        <div class="field">
+          <label for="bk-email">Email (opcional)</label>
+          <input class="input" id="bk-email" name="email" type="email" autocomplete="email" value="${U.esc(client.email || "")}" placeholder="tu@correo.com">
+        </div>
+        <div class="field field--full">
+          <label for="bk-notas">Notas (opcional)</label>
+          <textarea class="textarea" id="bk-notas" name="notas" placeholder="Alergias, tono de color, referencias, etc.">${U.esc(client.notas || "")}</textarea>
+        </div>
+      </div>
+      <p class="field-hint" style="margin-top:12px">Al reservar aceptas que te contactemos por WhatsApp para confirmar la cita.</p>
+      ${returningClientHtml}`;
+    }
+
+    return "";
+  }
+
+  function summaryHtml() {
+    const b = state.booking;
+    const svc = service();
+    const isSuccess = b.step === 5;
+    const result = b.result;
+
+    let barberName = "Cualquiera";
+    if (b.barberId && b.barberId !== "any") {
+      const barber = barberById(b.barberId);
+      barberName = barber ? barber.nombre : "—";
+    } else if (b.assignedBarber) {
+      const barber = barberById(b.assignedBarber);
+      barberName = barber ? barber.nombre : "—";
+    }
+
+    const rows = isSuccess
+      ? [
+          ["Servicio", result.servicio_nombre],
+          ["Estilista", result.barbero_nombre],
+          ["Fecha", U.formatDate(result.fecha, "short")],
+          ["Hora", result.hora],
+          ["Duración", `${result.duracion_min} min`],
+        ]
+      : [
+          ["Servicio", svc ? svc.nombre : "—"],
+          ["Estilista", barberName],
+          ["Fecha", b.date ? U.formatDate(b.date, "short") : "—"],
+          ["Hora", b.time || "—"],
+          ["Duración", svc ? `${svc.duracion_min} min` : "—"],
+        ];
+
+    const total = isSuccess ? result.precio : svc ? svc.precio : 0;
+
+    return `${rows
+      .map(([label, value]) => `<div class="summary__row"><span>${U.esc(label)}</span><b>${U.esc(value || "—")}</b></div>`)
+      .join("")}
+      <div class="summary__total"><span>Total</span><strong>${U.money(total)}</strong></div>`;
+  }
+
+  function successHtml() {
+    const r = state.booking.result;
+    const waDigits = svWhatsAppNumber(state.config.whatsapp || C.contact.whatsapp);
+    const waText = encodeURIComponent(
+      `Hola, reservé una cita en ${C.brand.name}. Código de cliente ${r.codigo_cliente} · Código de cita ${r.codigo} · ${U.formatDate(r.fecha, "short")} ${r.hora} · ${r.servicio_nombre}`
+    );
+    return `<div class="booking-success">
+      <div class="success-check">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h3>Todo listo</h3>
+      <p>Tu cita quedó registrada. Guarda tu código de cliente para consultar tu historial y reservar más rápido.</p>
+      <div class="success-ticket">
+        <div class="success-ticket__row"><span>Código</span><b class="success-code">${U.esc(r.codigo)}</b></div>
+        ${r.codigo_cliente ? `<div class="success-ticket__row"><span>Tu código de cliente</span><b class="success-code">${U.esc(r.codigo_cliente)}</b></div>` : ""}
+        <div class="success-ticket__row"><span>Servicio</span><b>${U.esc(r.servicio_nombre)}</b></div>
+        <div class="success-ticket__row"><span>Estilista</span><b>${U.esc(r.barbero_nombre)}</b></div>
+        <div class="success-ticket__row"><span>Fecha</span><b>${U.esc(U.formatDate(r.fecha, "long"))}</b></div>
+        <div class="success-ticket__row"><span>Hora</span><b>${U.esc(r.hora)}</b></div>
+        <div class="success-ticket__row"><span>Total</span><b>${U.money(r.precio)}</b></div>
+      </div>
+      <div class="success-actions">
+        <button class="btn btn--primary btn--sm" type="button" data-ics>Guardar en calendario</button>
+        ${waDigits ? `<a class="btn btn--outline btn--sm" href="https://wa.me/${waDigits}?text=${waText}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
+        <button class="btn btn--ghost btn--sm" type="button" data-close-modal>Listo</button>
+      </div>
+    </div>`;
+  }
+
+  async function loadAvailability() {
+    const b = state.booking;
+    const token = ++b.reqToken;
+    b.loading = true;
+    b.availability = null;
+    renderBooking();
+    try {
+      const res = await S.availability({ date: b.date, serviceId: b.serviceId, barberId: b.barberId });
+      if (token !== b.reqToken) return;
+      b.availability = res;
+      if (b.time && !res.slots.some((s) => s.time === b.time)) {
+        b.time = null;
+        b.assignedBarber = null;
+      }
+    } catch (error) {
+      if (token !== b.reqToken) return;
+      U.toast(error.message || "No se pudo consultar la disponibilidad.", "error");
+      b.availability = { slots: [], closed: false };
+    } finally {
+      if (token === b.reqToken) {
+        b.loading = false;
+        if (b.step === 3) renderBooking();
+      }
+    }
+  }
+
+  function captureClient() {
+    const b = state.booking;
+    if (!b || b.step !== 4) return;
+    const name = $("#bk-nombre");
+    if (!name) return;
+    const nextClient = {
+      nombre: name.value.trim(),
+      telefono: $("#bk-tel").value.trim(),
+      email: $("#bk-email").value.trim(),
+      notas: $("#bk-notas").value.trim(),
+    };
+    if (b.clientVerification && (
+      clientNameKey(nextClient.nombre) !== clientNameKey(b.clientVerification.nombre) ||
+      U.normalizePhone(nextClient.telefono) !== U.normalizePhone(b.clientVerification.telefono)
+    )) b.clientVerification = null;
+    b.client = nextClient;
+  }
+
+  function clientNameKey(value) {
+    return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+
+  async function verifyReturningClient(form) {
+    const values = Object.fromEntries(new FormData(form).entries());
+    const identity = {
+      codigo_cliente: String(values.codigo_cliente || "").trim().toUpperCase(),
+      nombre: String(values.nombre || "").trim(),
+      telefono: String(values.telefono || "").trim(),
+    };
+    const b = state.booking;
+    b.clientLookup = { ...b.clientLookup, ...identity, loading: true, message: "", isError: false };
+    if (identity.nombre.length < 2 || U.normalizePhone(identity.telefono).length !== 8 || !/^AS-\d{2,}$/.test(identity.codigo_cliente)) {
+      b.clientLookup.loading = false;
+      b.clientLookup.open = true;
+      b.clientLookup.message = "Revisa tu código AS, nombre y teléfono salvadoreño de 8 dígitos.";
+      b.clientLookup.isError = true;
+      renderBooking();
+      return;
+    }
+
+    try {
+      const result = await S.lookup(identity);
+      b.client.nombre = result.client.nombre;
+      b.client.telefono = result.client.telefono;
+      b.clientVerification = {
+        codigo_cliente: result.client.codigo_cliente,
+        nombre: result.client.nombre,
+        telefono: result.client.telefono,
+      };
+      b.clientLookup.open = false;
+      b.clientLookup.message = "Perfil encontrado. Tus próximas citas y servicios quedarán vinculados a este cliente.";
+      b.clientLookup.isError = false;
+    } catch (error) {
+      b.clientLookup.open = true;
+      b.clientLookup.message = error.message || "No encontramos ese perfil. Revisa tus datos o continúa como cliente nuevo.";
+      b.clientLookup.isError = true;
+    } finally {
+      b.clientLookup.loading = false;
+      renderBooking();
+    }
+  }
+
+  async function submitBooking() {
+    const b = state.booking;
+    captureClient();
+    const client = b.client;
+    if (client.nombre.length < 2) {
+      U.toast("Escribe tu nombre completo.", "error");
+      $("#bk-nombre").focus();
+      return;
+    }
+    if (U.normalizePhone(client.telefono).length !== 8) {
+      U.toast("Escribe un teléfono salvadoreño de 8 dígitos.", "error");
+      $("#bk-tel").focus();
+      return;
+    }
+
+    const btn = $("#booking-next");
+    btn.disabled = true;
+    btn.textContent = "Reservando…";
+
+    try {
+      const result = await S.book({
+        cliente_nombre: client.nombre,
+        cliente_telefono: client.telefono,
+        cliente_email: client.email,
+        notas: client.notas,
+        codigo_cliente: b.clientVerification ? b.clientVerification.codigo_cliente : "",
+        servicio_id: b.serviceId,
+        barbero_id: b.barberId,
+        fecha: b.date,
+        hora: b.time,
+      });
+      b.result = result;
+      b.step = 5;
+      renderBooking();
+      U.toast(`Cita reservada. Tu código de cliente es ${result.codigo_cliente || "—"}.`, "success", 6000);
+      renderHeroNext();
+    } catch (error) {
+      U.toast(error.message || "No se pudo reservar. Intenta de nuevo.", "error", 5200);
+      btn.disabled = false;
+      btn.textContent = "Confirmar cita";
+    }
+  }
+
+  async function bookingNext() {
+    const b = state.booking;
+    if (!b || b.loading) return;
+    if (b.step === 4) {
+      await submitBooking();
+      return;
+    }
+    if (!canContinue()) return;
+    b.step += 1;
+    renderBooking();
+    if (b.step === 3) await loadAvailability();
+  }
+
+  function bookingBack() {
+    const b = state.booking;
+    if (!b || b.step <= 1) return;
+    if (b.step === 4) captureClient();
+    if (b.step === 5) return;
+    b.step -= 1;
+    renderBooking();
+  }
+
+  /* ---------- Mis citas ---------- */
+  function openLookup() {
+    state.lookup = { identity: null, client: null, results: null, error: "", confirmId: null, loading: false };
+    $("#lookup-results").innerHTML = "";
+    $("#lookup-code").value = "";
+    $("#lookup-name").value = "";
+    $("#lookup-phone").value = "";
+    U.openModal("#lookup-modal");
+  }
+
+  async function searchAppointments(identity) {
+    state.lookup.loading = true;
+    state.lookup.confirmId = null;
+    state.lookup.identity = identity;
+    state.lookup.client = null;
+    state.lookup.error = "";
+    state.lookup.results = null;
+    $("#lookup-results").innerHTML = `<div class="appointments-list"><div class="skeleton" style="height:96px"></div></div>`;
+    try {
+      const res = await S.lookup(identity);
+      state.lookup.client = res.client;
+      state.lookup.results = res.appointments || [];
+    } catch (error) {
+      state.lookup.results = [];
+      state.lookup.error = error.message || "No se pudo consultar el perfil.";
+    } finally {
+      state.lookup.loading = false;
+      renderLookup();
+    }
+  }
+
+  function renderLookup() {
+    const box = $("#lookup-results");
+    const { results, confirmId, client, error } = state.lookup;
+    if (results === null) {
+      box.innerHTML = "";
+      return;
+    }
+    if (!client) {
+      box.innerHTML = `<div class="empty-state" style="margin-top:22px"><strong>No encontramos ese perfil</strong>${U.esc(error || "Revisa tu código de cliente, nombre y teléfono.")}</div>`;
+      return;
+    }
+
+    const clientHeader = `<div class="client-history-head"><div><span class="eyebrow">${U.esc(client.codigo_cliente)}</span><h3>${U.esc(client.nombre)}</h3></div><span>${results.length} ${results.length === 1 ? "cita" : "citas"}</span></div>`;
+    if (!results.length) {
+      box.innerHTML = `${clientHeader}<div class="empty-state" style="margin-top:22px"><strong>Aún no hay citas en tu historial</strong>Cuando reserves tu primer servicio, aparecerá aquí.</div>`;
+      return;
+    }
+
+    const now = `${U.todayISO()}T${U.timeFromMinutes(U.nowMinutes())}`;
+    const upcoming = results.filter((a) => `${a.fecha}T${a.hora}` >= now && !["cancelada", "completada", "no_asistio"].includes(a.estado));
+    const past = results.filter((a) => !upcoming.includes(a));
+
+    const card = (a, isPast) => {
+      const when = `${a.fecha}T${a.hora}`;
+      const cancelable = !isPast && ["pendiente", "confirmada"].includes(a.estado) && when > now;
+      const confirming = confirmId === a.id;
+      return `<div class="appt-card ${isPast ? "appt-card--past" : ""}">
+        <div class="appt-card__top">
+          <div>
+            <div class="appt-card__date">${U.esc(U.relativeDay(a.fecha))} · ${U.esc(a.hora)}</div>
+            <div class="appt-card__service">${U.esc(a.servicio_nombre)}</div>
+            <div class="appt-card__meta">${U.esc(a.barbero_nombre)} · ${a.duracion_min} min · ${U.money(a.precio)}</div>
+          </div>
+          ${U.statusPill(a.estado)}
+        </div>
+        <div class="appt-card__foot">
+          <span class="appt-card__code">Código ${U.esc(a.codigo)}</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${
+              confirming
+                ? `<button class="btn btn--ghost btn--sm" type="button" data-cancel-abort>No</button>
+                   <button class="btn btn--primary btn--sm" type="button" data-cancel-confirm="${U.esc(a.id)}">Sí, cancelar</button>`
+                : `${cancelable ? `<button class="btn btn--ghost btn--sm" type="button" data-cancel-id="${U.esc(a.id)}">Cancelar</button>` : ""}
+                   <button class="btn btn--outline btn--sm" type="button" data-ics-appt="${U.esc(a.id)}">Calendario</button>`
+            }
+          </div>
+        </div>
+      </div>`;
+    };
+
+    box.innerHTML = `${clientHeader}
+      ${upcoming.length ? `<div class="slot-group"><div class="slot-group__label">Próximas</div><div class="appointments-list">${upcoming.map((a) => card(a, false)).join("")}</div></div>` : ""}
+      ${past.length ? `<div class="slot-group"><div class="slot-group__label">Historial</div><div class="appointments-list">${past.map((a) => card(a, true)).join("")}</div></div>` : ""}
+    `;
+  }
+
+  async function cancelAppointment(id) {
+    try {
+      await S.cancel(id, state.lookup.identity);
+      U.toast("Cita cancelada. Te esperamos en otra ocasión.", "success");
+      state.lookup.confirmId = null;
+      await searchAppointments(state.lookup.identity);
+    } catch (error) {
+      U.toast(error.message || "No se pudo cancelar.", "error");
+    }
+  }
+
+  /* ---------- Eventos ---------- */
+  function wireStatic() {
+    document.addEventListener("click", (event) => {
+      const bookService = event.target.closest("[data-book-service]");
+      if (bookService) {
+        openBooking(bookService.dataset.bookService);
+        return;
+      }
+      const bookBarber = event.target.closest("[data-book-barber]");
+      if (bookBarber) {
+        openBooking(null, bookBarber.dataset.bookBarber);
+        return;
+      }
+      if (event.target.closest("[data-open-booking]")) {
+        openBooking();
+        return;
+      }
+      if (event.target.closest("[data-open-lookup]")) {
+        openLookup();
+        return;
+      }
+      if (event.target.closest("[data-ics]") && state.booking && state.booking.result) {
+        U.downloadICS(state.booking.result);
+      }
+      const icsAppt = event.target.closest("[data-ics-appt]");
+      if (icsAppt && state.lookup.results) {
+        const appt = state.lookup.results.find((a) => a.id === icsAppt.dataset.icsAppt);
+        if (appt) U.downloadICS(appt);
+      }
+      const cancelId = event.target.closest("[data-cancel-id]");
+      if (cancelId) {
+        state.lookup.confirmId = cancelId.dataset.cancelId;
+        renderLookup();
+      }
+      if (event.target.closest("[data-cancel-abort]")) {
+        state.lookup.confirmId = null;
+        renderLookup();
+      }
+      const cancelConfirm = event.target.closest("[data-cancel-confirm]");
+      if (cancelConfirm) cancelAppointment(cancelConfirm.dataset.cancelConfirm);
+    });
+
+    // Navegación móvil
+    const toggle = $("#nav-toggle");
+    const nav = $("#site-nav");
+    toggle.addEventListener("click", () => {
+      const open = nav.classList.toggle("is-open");
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
+    });
+    nav.addEventListener("click", (event) => {
+      if (event.target.closest("a, button")) {
+        nav.classList.remove("is-open");
+        toggle.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    // Cabecera con fondo al hacer scroll
+    const header = $("#site-header");
+    const onScroll = () => header.classList.toggle("is-scrolled", window.scrollY > 10);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    // Reserva
+    $("#booking-next").addEventListener("click", bookingNext);
+    $("#booking-back").addEventListener("click", bookingBack);
+    $("#booking-modal").addEventListener("click", (event) => {
+      const b = state.booking;
+      if (!b) return;
+
+      const pickService = event.target.closest("[data-pick-service]");
+      if (pickService) {
+        b.serviceId = pickService.dataset.pickService;
+        b.time = null;
+        b.assignedBarber = null;
+        b.availability = null;
+        if (b.step === 1) b.step = 2;
+        renderBooking();
+        return;
+      }
+
+      const pickBarber = event.target.closest("[data-pick-barber]");
+      if (pickBarber) {
+        b.barberId = pickBarber.dataset.pickBarber;
+        b.time = null;
+        b.assignedBarber = null;
+        b.availability = null;
+        renderBooking();
+        return;
+      }
+
+      const pickDate = event.target.closest("[data-pick-date]");
+      if (pickDate) {
+        b.date = pickDate.dataset.pickDate;
+        b.time = null;
+        b.assignedBarber = null;
+        b.availability = null;
+        renderBooking();
+        return;
+      }
+
+      const pickTime = event.target.closest("[data-pick-time]");
+      if (pickTime) {
+        b.time = pickTime.dataset.pickTime;
+        const slot = b.availability && b.availability.slots.find((s) => s.time === b.time);
+        b.assignedBarber = b.barberId === "any" && slot ? slot.barbers[0] : b.barberId;
+        renderBooking();
+      }
+
+      if (event.target.closest("[data-toggle-client-lookup]")) {
+        captureClient();
+        b.clientLookup.open = !b.clientLookup.open;
+        b.clientLookup.message = "";
+        if (b.clientLookup.open) {
+          b.clientLookup.nombre = b.clientLookup.nombre || b.client.nombre;
+          b.clientLookup.telefono = b.clientLookup.telefono || b.client.telefono;
+        }
+        renderBooking();
+        return;
+      }
+      if (event.target.closest("[data-clear-client-verification]")) {
+        b.clientVerification = null;
+        renderBooking();
+        return;
+      }
+      if (event.target.closest("[data-new-client-mode]")) {
+        b.clientLookup.open = false;
+        b.clientLookup.message = "Completa los datos de arriba para continuar como cliente nuevo.";
+        b.clientLookup.isError = false;
+        renderBooking();
+        return;
+      }
+    });
+
+    $("#booking-modal").addEventListener("submit", (event) => {
+      if (event.target.id !== "returning-client-form") return;
+      event.preventDefault();
+      verifyReturningClient(event.target);
+    });
+
+    // Búsqueda de citas
+    $("#lookup-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const identity = {
+        codigo_cliente: $("#lookup-code").value.trim().toUpperCase(),
+        nombre: $("#lookup-name").value.trim(),
+        telefono: $("#lookup-phone").value.trim(),
+      };
+      if (!/^AS-\d{2,}$/.test(identity.codigo_cliente) || clientNameKey(identity.nombre).length < 2 || U.normalizePhone(identity.telefono).length !== 8) {
+        U.toast("Revisa tu código AS, nombre y teléfono salvadoreño de 8 dígitos.", "error");
+        if (!/^AS-\d{2,}$/.test(identity.codigo_cliente)) $("#lookup-code").focus();
+        else if (clientNameKey(identity.nombre).length < 2) $("#lookup-name").focus();
+        else $("#lookup-phone").focus();
+        return;
+      }
+      searchAppointments(identity);
+    });
+
+    // Al cerrar la reserva, refresca el próximo hueco del hero
+    $("#booking-modal").addEventListener("click", (event) => {
+      if (event.target.closest("[data-close-modal]")) setTimeout(renderHeroNext, 300);
+    });
+  }
+
+  function setupReveal() {
+    const items = $$("[data-reveal]");
+    if (!("IntersectionObserver" in window)) {
+      items.forEach((el) => el.classList.add("is-visible"));
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+    );
+    items.forEach((el) => observer.observe(el));
+  }
+})();

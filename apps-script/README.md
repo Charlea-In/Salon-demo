@@ -1,0 +1,45 @@
+# Backend de Apps Script
+
+`Code.gs` es la API que conecta **Aurea Salón** con Google Sheets. No necesita servidor propio: se ejecuta como Web App de Google Apps Script. La hoja se crea vacía (sin citas ni clientes de ejemplo) y queda lista para que la dueña cargue su equipo y sus tarifas.
+
+## Instalación mínima
+
+1. Crea una hoja de cálculo nueva.
+2. **Extensiones → Apps Script**.
+3. Pega `Code.gs` en el editor.
+4. (Opcional, recomendado) Copia `appsscript.json` en **Configuración del proyecto → Mostrar archivo de manifiesto**.
+5. Ejecuta `setup()` y autoriza los permisos.
+6. Ejecuta `configurarClave("aurea-2026-fuerte")` (o una clave propia de 10+ caracteres).
+7. **Implementar → Nueva implementación → Aplicación web**:
+   - Ejecutar como: **Yo**
+   - Acceso: **Cualquier persona**
+8. Copia la URL `/exec` en `js/config.js` → `api.url`.
+
+La guía detallada está en [`docs/google-sheets-setup.md`](../docs/google-sheets-setup.md).
+
+## Funciones del editor
+
+| Función | Uso |
+| --- | --- |
+| `setup()` | Crea hojas, encabezados y datos iniciales. |
+| `configurarClave("...")` | Define o cambia la clave del panel. |
+| `verificarInstalacion()` | Revisa hojas, clave e ID de la hoja. |
+
+## Propiedades del script
+
+| Propiedad | Obligatoria | Descripción |
+| --- | --- | --- |
+| `ADMIN_KEY` | Sí | Clave del panel. |
+| `SPREADSHEET_ID` | No | ID de la hoja. Se guarda solo si `setup()` crea la hoja. Si el script está vinculado a una hoja, no hace falta. |
+
+## Notas
+
+- El Web App debe ejecutarse como **Yo** y con acceso **Cualquier persona** para que el sitio público pueda reservar.
+- La hoja permanece privada; el script es el único intermediario.
+- Después de editar `Code.gs`, crea una **Nueva versión** de la implementación para que los cambios se publiquen.
+- Para actualizar una instalación existente, ejecuta `migrar()` primero. En este proyecto, el backend usa la zona horaria `America/El_Salvador`, moneda USD y teléfonos locales de 8 dígitos.
+- La migración solo ajusta valores regionales de ejemplo reconocidos; conserva precios y datos comerciales personalizados.
+- La pestaña **Barberos** guarda al equipo de estilistas y el campo interno `barbero_id` se mantiene por compatibilidad. En la interfaz todo se muestra como “Estilista”.
+- Los códigos de cliente usan el prefijo `AS-` (por ejemplo, `AS-01`).
+- Las fechas y horas se guardan como texto ISO (`YYYY-MM-DD`, `HH:mm`) para evitar conversiones automáticas de Sheets.
+- Las acciones de escritura usan `LockService` para evitar citas duplicadas.

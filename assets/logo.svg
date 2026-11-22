@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64" role="img" aria-label="Aurea Salón">
+  <defs>
+    <linearGradient id="aureaBadge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F9E8E4"/>
+      <stop offset="1" stop-color="#F1E3CE"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#aureaBadge)" stroke="#E3C9C4"/>
+  <text x="32" y="41" text-anchor="middle" font-family="Instrument Serif, Georgia, serif" font-size="28" letter-spacing="1" fill="#3D2B2B">AU</text>
+  <rect x="17" y="49" width="30" height="3" rx="1.5" fill="#C9A227"/>
+  <text x="76" y="31" font-family="Bebas Neue, Impact, sans-serif" font-size="27" letter-spacing="2.4" fill="#3D2B2B">AUREA</text>
+  <text x="77" y="49" font-family="Helvetica, Arial, sans-serif" font-size="9" letter-spacing="4.2" fill="#8F6F1E">SALÓN DE BELLEZA</text>
+</svg>
