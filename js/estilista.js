@@ -321,12 +321,7 @@
       actions += `<button class="btn-admin btn-admin--primary" type="button" data-action="confirm" data-id="${a.id}">Confirmar</button>`;
     }
     if (isPending || isConfirmed) {
-      const localPhone = U.normalizePhone(a.cliente_telefono || "");
-      const phone = localPhone.length === 8 ? `503${localPhone}` : "";
-      const message = `Hola ${a.cliente_nombre || ""}, tu cita está confirmada. Te veo a las ${a.hora}. Recuerda llegar 5 minutos antes. Si termino el servicio anterior antes de tu cita, con gusto podemos iniciar antes.`;
-      if (phone) {
-        actions += `<a class="btn-admin" href="https://wa.me/${phone}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`;
-      }
+      actions += renderWhatsAppAction(a);
       actions += `<button class="btn-admin btn-admin--primary" type="button" data-action="start" data-id="${a.id}">Iniciar</button>`;
     }
     if (isLive) {
@@ -348,6 +343,14 @@
     `;
   }
 
+  function renderWhatsAppAction(appt) {
+    const localPhone = U.normalizePhone(appt.cliente_telefono || "");
+    if (localPhone.length !== 8) return "";
+    const phone = `503${localPhone}`;
+    const message = `Hola ${appt.cliente_nombre || ""}, tu cita está confirmada. Te veo a las ${appt.hora}. Recuerda llegar 5 minutos antes. Si termino el servicio anterior antes de tu cita, con gusto podemos iniciar antes.`;
+    return `<a class="btn-admin" href="https://wa.me/${phone}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`;
+  }
+
   function renderUpcoming(appointments) {
     const today = U.todayISO();
     const upcoming = appointments
@@ -364,7 +367,7 @@
           <div class="jornada-row__client">${a.hora} · ${U.esc(a.cliente_nombre)}</div>
           <div class="jornada-row__meta">${U.esc(a.servicio_nombre)}</div>
         </div>
-        <div class="jornada-row__side">${U.statusPill(a.estado, true)}</div>
+        <div class="jornada-row__side">${U.statusPill(a.estado, true)}${["pendiente", "confirmada"].includes(a.estado) ? renderWhatsAppAction(a) : ""}</div>
       </div>
     `).join("");
   }
