@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261121a">
+  <link rel="stylesheet" href="css/styles.css?v=20261121b">
 </head>
 <body>
   <a class="sr-only" href="#inicio">Saltar al contenido</a>
@@ -46,41 +46,38 @@
     <!-- HERO -->
     <section class="hero" id="inicio">
       <div class="container hero__grid">
-        <div>
-          <span class="eyebrow" data-reveal>Salón de belleza · <span data-config="ciudad">El Salvador</span> · desde <span data-config="anio">2018</span></span>
-          <h1 class="hero__title" data-reveal>Tu belleza,<br><em>en su mejor luz</em>.</h1>
+        <div class="hero__copy">
+          <span class="eyebrow" data-reveal>Un espacio para ti · <span data-config="ciudad">El Salvador</span></span>
+          <h1 class="hero__title" data-reveal>Ven como eres.<br><em>Sal brillando.</em></h1>
           <p class="hero__lead" data-reveal>
-            Cortes, color, uñas, maquillaje y masajes en un espacio pensado para consentirte.
-            Reserva tu cita, llega a relajarte y sal con esa luz que solo tú tienes.
+            Color, cuidado y belleza en un lugar donde puedes bajar el ritmo, sentirte escuchada y salir siendo más tú.
           </p>
           <div class="hero__actions" data-reveal>
-            <button class="btn btn--primary" type="button" data-open-booking>
-              Reservar cita <span class="btn__arrow" aria-hidden="true">→</span>
-            </button>
-            <a class="btn btn--outline" href="#servicios">Ver servicios</a>
+            <button class="btn btn--primary" type="button" data-open-booking>Encuentra tu momento <span class="btn__arrow" aria-hidden="true">↗</span></button>
+            <a class="btn btn--outline" href="#servicios">Explorar servicios</a>
           </div>
           <div class="hero__meta" data-reveal>
-            <div class="hero__stat"><strong id="stat-years">8</strong><span>Años de experiencia</span></div>
-            <div class="hero__stat"><strong>4.9</strong><span>320 reseñas</span></div>
-            <div class="hero__stat"><strong id="stat-stylists">4</strong><span>Estilistas</span></div>
+            <div class="hero__stat"><strong id="stat-stylists">4</strong><span>Especialistas</span></div>
+            <div class="hero__stat"><strong id="stat-years">8</strong><span>Años cuidando de ti</span></div>
+            <span class="hero__signature">Belleza a tu manera <span aria-hidden="true">✳</span></span>
           </div>
         </div>
 
-        <aside class="hero-card" data-reveal aria-label="Estado del salón">
-          <div class="hero-card__top">
-            <span class="hero-card__label">Hoy en el salón</span>
-            <span class="status-dot status-dot--open" id="hero-status">Abierto</span>
-          </div>
-          <div class="hero-card__hours" id="hero-hours">09:00 <small>— 19:00</small></div>
-          <div class="hero-card__next">
-            <span>Próximo hueco</span>
-            <strong id="hero-next">—</strong>
-          </div>
-          <div class="hero-card__list" id="hero-services"></div>
-          <button class="btn btn--primary btn--block" type="button" data-open-booking>
-            Elegir horario <span class="btn__arrow" aria-hidden="true">→</span>
-          </button>
-        </aside>
+        <div class="hero__visual" data-reveal>
+          <img class="hero__art" src="assets/aurea-hero.svg" alt="Ilustración cálida de una mujer con el cabello recogido y flores" fetchpriority="high">
+          <span class="hero__visual-note hero__visual-note--top">Un ratito para ti</span>
+          <span class="hero__visual-note hero__visual-note--bottom">Belleza sin prisa <span aria-hidden="true">✳</span></span>
+          <aside class="hero-card" aria-label="Disponibilidad del salón">
+            <div class="hero-card__top">
+              <span class="hero-card__label">Hoy en el salón</span>
+              <span class="status-dot status-dot--open" id="hero-status">Abierto</span>
+            </div>
+            <div class="hero-card__hours" id="hero-hours">09:00 <small>— 19:00</small></div>
+            <div class="hero-card__next"><span>Próximo espacio</span><strong id="hero-next">—</strong></div>
+            <div class="hero-card__list" id="hero-services"></div>
+            <button class="btn btn--primary btn--block" type="button" data-open-booking>Ver horarios <span class="btn__arrow" aria-hidden="true">↗</span></button>
+          </aside>
+        </div>
       </div>
     </section>
 
@@ -90,14 +87,31 @@
     </div>
 
     <!-- SERVICIOS -->
+    <section class="section intro-section" id="bienvenida">
+      <div class="container intro-grid">
+        <div class="intro-mark" aria-hidden="true">AU<span>✳</span></div>
+        <div class="intro-copy">
+          <span class="eyebrow">Un salón hecho para sentirte bien</span>
+          <h2>Tu estilo, tus tiempos,<br><em>tu momento.</em></h2>
+          <p>Nos gusta escuchar primero. Así cada cita se siente personal, desde elegir tu servicio hasta el último detalle frente al espejo.</p>
+          <a class="link-arrow" href="#estilistas">Conoce a nuestro equipo <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="intro-points">
+          <div><span>01</span><p>Reserva en línea<br>sin llamadas</p></div>
+          <div><span>02</span><p>Precios y duración<br>a la vista</p></div>
+          <div><span>03</span><p>Un equipo que<br>te escucha</p></div>
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="servicios">
       <div class="container">
         <div class="section-head">
           <div>
             <span class="eyebrow">01 — Servicios</span>
-            <h2>La carta de belleza</h2>
+            <h2>Tu próximo ritual</h2>
           </div>
-          <p>Precios claros y tiempos reales. Elige tu servicio o combo y reserva en menos de un minuto.</p>
+          <p>Desde un cambio sutil hasta un momento completo de cuidado. Explora los servicios disponibles y encuentra el tuyo.</p>
         </div>
         <div class="services-grid" id="services-grid" data-reveal></div>
       </div>
@@ -109,11 +123,19 @@
         <div class="section-head">
           <div>
             <span class="eyebrow">02 — El equipo</span>
-            <h2>Manos de confianza</h2>
+            <h2>Conoce a las que te cuidan</h2>
           </div>
-          <p>Cuatro especialistas, un mismo estándar. Reserva con la estilista que mejor te conozca.</p>
+          <p>Personas reales, estilos distintos y la misma atención en cada detalle.</p>
         </div>
         <div class="barbers-grid" id="stylists-grid" data-reveal></div>
+      </div>
+    </section>
+
+    <section class="editorial-banner">
+      <div class="container editorial-banner__inner">
+        <span class="editorial-banner__flower" aria-hidden="true">✳</span>
+        <p>Un buen día de belleza<br><em>también empieza por ti.</em></p>
+        <button class="btn btn--dark" type="button" data-open-booking>Reserva tu cita <span aria-hidden="true">↗</span></button>
       </div>
     </section>
 
@@ -122,10 +144,10 @@
       <div class="container">
         <div class="section-head">
           <div>
-            <span class="eyebrow">03 — Cómo funciona</span>
-            <h2>Sin llamadas. Sin esperas.</h2>
+            <span class="eyebrow">Tu visita, paso a paso</span>
+            <h2>Fácil desde el primer clic.</h2>
           </div>
-          <p>Tu cita queda registrada al instante y te confirmamos por WhatsApp.</p>
+          <p>Elige lo que necesitas y deja que nosotras preparemos el resto.</p>
         </div>
         <div class="steps" data-reveal>
           <div class="step">
@@ -152,7 +174,7 @@
       <div class="container">
         <div class="contact-grid">
           <div class="contact-panel" data-reveal>
-            <span class="eyebrow">04 — Visítanos</span>
+            <span class="eyebrow">Ven a vernos</span>
             <h2 style="margin-top:14px">Horario del salón</h2>
             <p>Trabajamos con cita para que nadie espere de más. Si no encuentras hueco en línea, escríbenos por WhatsApp.</p>
             <div class="hours" id="hours-list"></div>
@@ -217,7 +239,7 @@
       </div>
       <div class="footer-bottom">
       <span>© <span id="year">2026</span> <span data-config="nombre_negocio">Aurea Salón</span>. Todos los derechos reservados.</span>
-      <span>Reservas en línea · Datos en Google Sheets</span>
+      <span>Reservas en línea · Atención cercana</span>
       </div>
     </div>
   </footer>
