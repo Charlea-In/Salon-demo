@@ -34,7 +34,7 @@
 
   const state = {
     services: [...C.services],
-    barbers: [...C.barbers],
+    estilistas: [...C.estilistas],
     config: { ...C.contact },
     booking: null,
     lookup: { identity: null, client: null, results: null, error: "", confirmId: null, loading: false },
@@ -54,7 +54,7 @@
     try {
       const data = await S.bootstrap();
       if (data.services && data.services.length) state.services = data.services;
-      if (data.barbers && data.barbers.length) state.barbers = data.barbers;
+      if (data.estilistas && data.estilistas.length) state.estilistas = data.estilistas;
       state.config = data.config || state.config;
       applyConfig(state.config);
       renderAll();
@@ -74,10 +74,10 @@
   function renderAll() {
     renderTicker();
     renderServices();
-    renderBarbers();
+    renderEstilistas();
     renderHours();
     renderHeroCard();
-    $("#stat-stylists").textContent = state.barbers.length || C.barbers.length;
+    $("#stat-stylists").textContent = state.estilistas.length || C.estilistas.length;
   }
 
   function renderTicker() {
@@ -107,22 +107,22 @@
       .join("");
   }
 
-  function renderBarbers() {
-    $("#stylists-grid").innerHTML = state.barbers
+  function renderEstilistas() {
+    $("#stylists-grid").innerHTML = state.estilistas
       .map(
         (b) => `
-        <article class="barber-card" style="--barber-color:${U.esc(b.color || "#C9A227")}">
-          <div class="barber-card__art">
-            ${safePhotoUrl(b.photo_url) ? `<img class="barber-card__photo" src="${U.esc(safePhotoUrl(b.photo_url))}" alt="Foto de ${U.esc(b.nombre)}" loading="lazy" onerror="this.remove();this.parentElement.querySelector('.barber-card__initials').style.visibility='visible'">` : ""}
-            <span class="barber-card__tag">${U.esc(b.rol || "Estilista")}</span>
-            <span class="barber-card__initials" style="visibility:${safePhotoUrl(b.photo_url) ? "hidden" : "visible"}">${U.initials(b.nombre)}</span>
+        <article class="estilista-card" style="--estilista-color:${U.esc(b.color || "#C9A227")}">
+          <div class="estilista-card__art">
+            ${safePhotoUrl(b.photo_url) ? `<img class="estilista-card__photo" src="${U.esc(safePhotoUrl(b.photo_url))}" alt="Foto de ${U.esc(b.nombre)}" loading="lazy" onerror="this.remove();this.parentElement.querySelector('.estilista-card__initials').style.visibility='visible'">` : ""}
+            <span class="estilista-card__tag">${U.esc(b.rol || "Estilista")}</span>
+            <span class="estilista-card__initials" style="visibility:${safePhotoUrl(b.photo_url) ? "hidden" : "visible"}">${U.initials(b.nombre)}</span>
           </div>
-          <div class="barber-card__body">
+          <div class="estilista-card__body">
             <h3>${U.esc(b.nombre)}</h3>
-            <div class="barber-card__role">${U.esc(b.especialidad || "Estilista")}</div>
-            <p class="barber-card__spec">${U.esc(b.rol || "")}</p>
-            <div class="barber-card__foot">
-              <button class="link-arrow" type="button" data-book-barber="${U.esc(b.id)}">
+            <div class="estilista-card__role">${U.esc(b.especialidad || "Estilista")}</div>
+            <p class="estilista-card__spec">${U.esc(b.rol || "")}</p>
+            <div class="estilista-card__foot">
+              <button class="link-arrow" type="button" data-book-estilista="${U.esc(b.id)}">
                 Reservar con ${U.esc(String(b.nombre).split(" ")[0])}
               </button>
             </div>
@@ -182,7 +182,7 @@
     const service = state.services[0];
     try {
       const today = U.todayISO();
-      const todayRes = await S.availability({ date: today, serviceId: service.id, barberId: "any" });
+      const todayRes = await S.availability({ date: today, serviceId: service.id, estilistaId: "any" });
       if (todayRes.slots && todayRes.slots.length) {
         el.textContent = `Hoy ${todayRes.slots[0].time}`;
         return;
@@ -190,7 +190,7 @@
       for (let i = 1; i <= 14; i++) {
         const iso = U.addDays(today, i);
         if (S.isClosed(iso)) continue;
-        const res = await S.availability({ date: iso, serviceId: service.id, barberId: "any" });
+        const res = await S.availability({ date: iso, serviceId: service.id, estilistaId: "any" });
         if (res.slots && res.slots.length) {
           el.textContent = `${U.relativeDay(iso)} ${res.slots[0].time}`;
           return;
@@ -299,7 +299,7 @@
     return today;
   }
 
-  function openBooking(serviceId = null, barberId = "any") {
+  function openBooking(serviceId = null, estilistaId = "any") {
     if (!state.services.length) {
       U.toast("No hay servicios disponibles por el momento.", "error");
       return;
@@ -307,10 +307,10 @@
     state.booking = {
       step: serviceId ? 2 : 1,
       serviceId: serviceId || null,
-      barberId: barberId || "any",
+      estilistaId: estilistaId || "any",
       date: nextOpenDate(),
       time: null,
-      assignedBarber: null,
+      assignedEstilista: null,
       availability: null,
       loading: false,
       result: null,
@@ -327,8 +327,8 @@
     return state.services.find((s) => s.id === state.booking.serviceId) || null;
   }
 
-  function barberById(id) {
-    return state.barbers.find((b) => b.id === id) || null;
+  function estilistaById(id) {
+    return state.estilistas.find((b) => b.id === id) || null;
   }
 
   function canContinue() {
@@ -404,16 +404,16 @@
     }
 
     if (b.step === 2) {
-      const anySelected = b.barberId === "any";
-      const barberOptions = `<button class="option option--barber" type="button" data-pick-barber="any" aria-pressed="${anySelected}">
+      const anySelected = b.estilistaId === "any";
+      const estilistaOptions = `<button class="option option--estilista" type="button" data-pick-estilista="any" aria-pressed="${anySelected}">
           <span class="avatar" style="background:#f7e3e3;color:#3d2b2b">AU</span>
           <span><span class="option__title">Cualquier estilista</span><span class="option__sub">La primera disponible</span></span>
         </button>` +
-        state.barbers
+        state.estilistas
           .map(
-            (barber) => `<button class="option option--barber" type="button" data-pick-barber="${U.esc(barber.id)}" aria-pressed="${b.barberId === barber.id}">
-              <span class="avatar" style="background:${U.esc(barber.color || "#C9A227")}">${U.initials(barber.nombre)}${safePhotoUrl(barber.photo_url) ? `<img src="${U.esc(safePhotoUrl(barber.photo_url))}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span>
-              <span><span class="option__title">${U.esc(barber.nombre)}</span><span class="option__sub">${U.esc(barber.especialidad || "")}</span></span>
+            (estilista) => `<button class="option option--estilista" type="button" data-pick-estilista="${U.esc(estilista.id)}" aria-pressed="${b.estilistaId === estilista.id}">
+              <span class="avatar" style="background:${U.esc(estilista.color || "#C9A227")}">${U.initials(estilista.nombre)}${safePhotoUrl(estilista.photo_url) ? `<img src="${U.esc(safePhotoUrl(estilista.photo_url))}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span>
+              <span><span class="option__title">${U.esc(estilista.nombre)}</span><span class="option__sub">${U.esc(estilista.especialidad || "")}</span></span>
             </button>`
           )
           .join("");
@@ -430,7 +430,7 @@
         })
         .join("");
 
-      return `<div class="option-grid">${barberOptions}</div>
+      return `<div class="option-grid">${estilistaOptions}</div>
         <div class="slot-group">
           <div class="slot-group__label">Elige el día</div>
           <div class="date-strip">${chips}</div>
@@ -525,26 +525,26 @@
     const isSuccess = b.step === 5;
     const result = b.result;
 
-    let barberName = "Cualquiera";
-    if (b.barberId && b.barberId !== "any") {
-      const barber = barberById(b.barberId);
-      barberName = barber ? barber.nombre : "—";
-    } else if (b.assignedBarber) {
-      const barber = barberById(b.assignedBarber);
-      barberName = barber ? barber.nombre : "—";
+    let estilistaName = "Cualquiera";
+    if (b.estilistaId && b.estilistaId !== "any") {
+      const estilista = estilistaById(b.estilistaId);
+      estilistaName = estilista ? estilista.nombre : "—";
+    } else if (b.assignedEstilista) {
+      const estilista = estilistaById(b.assignedEstilista);
+      estilistaName = estilista ? estilista.nombre : "—";
     }
 
     const rows = isSuccess
       ? [
           ["Servicio", result.servicio_nombre],
-          ["Estilista", result.barbero_nombre],
+          ["Estilista", result.estilista_nombre],
           ["Fecha", U.formatDate(result.fecha, "short")],
           ["Hora", result.hora],
           ["Duración", `${result.duracion_min} min`],
         ]
       : [
           ["Servicio", svc ? svc.nombre : "—"],
-          ["Estilista", barberName],
+          ["Estilista", estilistaName],
           ["Fecha", b.date ? U.formatDate(b.date, "short") : "—"],
           ["Hora", b.time || "—"],
           ["Duración", svc ? `${svc.duracion_min} min` : "—"],
@@ -574,7 +574,7 @@
         <div class="success-ticket__row"><span>Código</span><b class="success-code">${U.esc(r.codigo)}</b></div>
         ${r.codigo_cliente ? `<div class="success-ticket__row"><span>Tu código de cliente</span><b class="success-code">${U.esc(r.codigo_cliente)}</b></div>` : ""}
         <div class="success-ticket__row"><span>Servicio</span><b>${U.esc(r.servicio_nombre)}</b></div>
-        <div class="success-ticket__row"><span>Estilista</span><b>${U.esc(r.barbero_nombre)}</b></div>
+        <div class="success-ticket__row"><span>Estilista</span><b>${U.esc(r.estilista_nombre)}</b></div>
         <div class="success-ticket__row"><span>Fecha</span><b>${U.esc(U.formatDate(r.fecha, "long"))}</b></div>
         <div class="success-ticket__row"><span>Hora</span><b>${U.esc(r.hora)}</b></div>
         <div class="success-ticket__row"><span>Total</span><b>${U.money(r.precio)}</b></div>
@@ -594,12 +594,12 @@
     b.availability = null;
     renderBooking();
     try {
-      const res = await S.availability({ date: b.date, serviceId: b.serviceId, barberId: b.barberId });
+      const res = await S.availability({ date: b.date, serviceId: b.serviceId, estilistaId: b.estilistaId });
       if (token !== b.reqToken) return;
       b.availability = res;
       if (b.time && !res.slots.some((s) => s.time === b.time)) {
         b.time = null;
-        b.assignedBarber = null;
+        b.assignedEstilista = null;
       }
     } catch (error) {
       if (token !== b.reqToken) return;
@@ -702,7 +702,7 @@
         notas: client.notas,
         codigo_cliente: b.clientVerification ? b.clientVerification.codigo_cliente : "",
         servicio_id: b.serviceId,
-        barbero_id: b.barberId,
+        estilista_id: b.estilistaId,
         fecha: b.date,
         hora: b.time,
       });
@@ -802,7 +802,7 @@
           <div>
             <div class="appt-card__date">${U.esc(U.relativeDay(a.fecha))} · ${U.esc(a.hora)}</div>
             <div class="appt-card__service">${U.esc(a.servicio_nombre)}</div>
-            <div class="appt-card__meta">${U.esc(a.barbero_nombre)} · ${a.duracion_min} min · ${U.money(a.precio)}</div>
+            <div class="appt-card__meta">${U.esc(a.estilista_nombre)} · ${a.duracion_min} min · ${U.money(a.precio)}</div>
           </div>
           ${U.statusPill(a.estado)}
         </div>
@@ -846,9 +846,9 @@
         openBooking(bookService.dataset.bookService);
         return;
       }
-      const bookBarber = event.target.closest("[data-book-barber]");
-      if (bookBarber) {
-        openBooking(null, bookBarber.dataset.bookBarber);
+      const bookEstilista = event.target.closest("[data-book-estilista]");
+      if (bookEstilista) {
+        openBooking(null, bookEstilista.dataset.bookEstilista);
         return;
       }
       if (event.target.closest("[data-open-booking]")) {
@@ -912,18 +912,18 @@
       if (pickService) {
         b.serviceId = pickService.dataset.pickService;
         b.time = null;
-        b.assignedBarber = null;
+        b.assignedEstilista = null;
         b.availability = null;
         if (b.step === 1) b.step = 2;
         renderBooking();
         return;
       }
 
-      const pickBarber = event.target.closest("[data-pick-barber]");
-      if (pickBarber) {
-        b.barberId = pickBarber.dataset.pickBarber;
+      const pickEstilista = event.target.closest("[data-pick-estilista]");
+      if (pickEstilista) {
+        b.estilistaId = pickEstilista.dataset.pickEstilista;
         b.time = null;
-        b.assignedBarber = null;
+        b.assignedEstilista = null;
         b.availability = null;
         renderBooking();
         return;
@@ -933,7 +933,7 @@
       if (pickDate) {
         b.date = pickDate.dataset.pickDate;
         b.time = null;
-        b.assignedBarber = null;
+        b.assignedEstilista = null;
         b.availability = null;
         renderBooking();
         return;
@@ -943,7 +943,7 @@
       if (pickTime) {
         b.time = pickTime.dataset.pickTime;
         const slot = b.availability && b.availability.slots.find((s) => s.time === b.time);
-        b.assignedBarber = b.barberId === "any" && slot ? slot.barbers[0] : b.barberId;
+        b.assignedEstilista = b.estilistaId === "any" && slot ? slot.estilistas[0] : b.estilistaId;
         renderBooking();
       }
 

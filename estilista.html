@@ -15,7 +15,7 @@
 <body class="admin-body">
 
   <!-- LOGIN -->
-  <div class="login" id="barbero-login">
+  <div class="login" id="estilista-login">
     <div class="login__brand">
       <a class="brand" href="index.html" style="color:#fbf1ec">
         <span class="brand__mark" aria-hidden="true">AU</span>
@@ -36,14 +36,14 @@
         <span class="eyebrow">Panel de la estilista</span>
         <h1>Entrar a mi jornada</h1>
         <p>Consulta solo tus citas, tus ingresos y tu reloj de servicio. Tu clave personal te la da la dueña del salón.</p>
-        <form class="login__form" id="barbero-login-form">
+        <form class="login__form" id="estilista-login-form">
           <div class="field">
-            <label for="barbero-key">Clave personal</label>
-            <input class="input" id="barbero-key" name="clave" type="password" autocomplete="current-password" placeholder="••••••••" required>
+            <label for="estilista-key">Clave personal</label>
+            <input class="input" id="estilista-key" name="clave" type="password" autocomplete="current-password" placeholder="••••••••" required>
           </div>
           <button class="btn-admin btn-admin--primary" type="submit" style="min-height:42px">Entrar a mi jornada</button>
         </form>
-        <div class="login__hint" id="barbero-hint"></div>
+        <div class="login__hint" id="estilista-hint"></div>
         <div style="margin-top:18px">
           <a class="link-arrow" href="index.html" style="color:#8a7373">Volver al sitio público</a>
         </div>
@@ -52,42 +52,42 @@
   </div>
 
   <!-- PANEL -->
-  <div class="barbero-shell" id="barbero-shell" hidden>
+  <div class="estilista-shell" id="estilista-shell" hidden>
     <div class="admin-main">
       <header class="topbar">
         <div class="topbar__left">
-          <a class="barbero-brand" href="index.html" aria-label="Aurea Salón">
+          <a class="estilista-brand" href="index.html" aria-label="Aurea Salón">
             <span class="brand__mark" aria-hidden="true">AU</span>
             <span class="brand__text">
               <span class="brand__name">AUREA</span>
               <span class="brand__sub">MI JORNADA</span>
             </span>
           </a>
-          <span class="barbero-who">
-            <span class="barbero-who__name" id="barbero-name">—</span>
-            <span class="barbero-who__role" id="barbero-role">—</span>
+          <span class="estilista-who">
+            <span class="estilista-who__name" id="estilista-name">—</span>
+            <span class="estilista-who__role" id="estilista-role">—</span>
           </span>
         </div>
         <div class="topbar__right">
-          <span class="barbero-live-chip" id="barbero-live-chip" hidden><i class="dot-live dot-live--busy"></i> En vivo</span>
-          <span class="barbero-sync" id="barbero-sync">—</span>
-          <button class="icon-btn" type="button" id="barbero-refresh" title="Actualizar ahora" aria-label="Actualizar ahora">
+          <span class="estilista-live-chip" id="estilista-live-chip" hidden><i class="dot-live dot-live--busy"></i> En vivo</span>
+          <span class="estilista-sync" id="estilista-sync">—</span>
+          <button class="icon-btn" type="button" id="estilista-refresh" title="Actualizar ahora" aria-label="Actualizar ahora">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11a8 8 0 1 0-2.3 6.7"/><path d="M20 4v7h-7"/></svg>
           </button>
-          <button class="icon-btn" type="button" id="barbero-logout" title="Cerrar sesión" aria-label="Cerrar sesión">
+          <button class="icon-btn" type="button" id="estilista-logout" title="Cerrar sesión" aria-label="Cerrar sesión">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></svg>
           </button>
         </div>
       </header>
 
-      <main class="view" id="barbero-view"></main>
+      <main class="view" id="estilista-view"></main>
     </div>
   </div>
 
   <div id="modal-root"></div>
 
-  <div class="barbero-loading" id="sheets-loading" role="status" aria-live="polite" aria-atomic="true" hidden>
-    <div class="barbero-loading__animation" id="sheets-loading-animation" aria-hidden="true"></div>
+  <div class="estilista-loading" id="sheets-loading" role="status" aria-live="polite" aria-atomic="true" hidden>
+    <div class="estilista-loading__animation" id="sheets-loading-animation" aria-hidden="true"></div>
     <span id="sheets-loading-label">Cargando…</span>
   </div>
 

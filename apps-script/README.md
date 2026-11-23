@@ -42,7 +42,7 @@ La guía detallada está en [`docs/google-sheets-setup.md`](../docs/google-sheet
 - Después de editar `Code.gs`, crea una **Nueva versión** de la implementación para que los cambios se publiquen.
 - Para actualizar una instalación existente, ejecuta `migrar()` primero. En este proyecto, el backend usa la zona horaria `America/El_Salvador`, moneda USD y teléfonos locales de 8 dígitos.
 - La migración solo ajusta valores regionales de ejemplo reconocidos; conserva precios y datos comerciales personalizados.
-- La pestaña **Barberos** guarda al equipo de estilistas y el campo interno `barbero_id` se mantiene por compatibilidad. En la interfaz todo se muestra como “Estilista”.
+- La pestaña **Estilistas** guarda al equipo de estilistas y el campo interno `estilista_id` se mantiene por compatibilidad. En la interfaz todo se muestra como “Estilista”.
 - Los códigos de cliente usan el prefijo `AS-` (por ejemplo, `AS-01`).
 - Las fechas y horas se guardan como texto ISO (`YYYY-MM-DD`, `HH:mm`) para evitar conversiones automáticas de Sheets.
 - Las acciones de escritura usan `LockService` para evitar citas duplicadas.

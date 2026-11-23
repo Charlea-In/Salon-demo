@@ -66,7 +66,7 @@ window.SALON_CONFIG = {
     { id: "srv-depilacion", nombre: "Depilación con cera", descripcion: "Depilación facial o corporal con cera tibia.", duracion_min: 30, precio: 15, activo: true, orden: 14 },
   ],
 
-  barbers: [
+  estilistas: [
     { id: "est-daniela", nombre: "Daniela Rivas", rol: "Fundadora", especialidad: "Color y balayage", telefono: "", comision_pct: 50, activo: true, color: "#C9A227", clave: "daniela2026" },
     { id: "est-valeria", nombre: "Valeria Cruz", rol: "Estilista senior", especialidad: "Cortes y peinados", telefono: "", comision_pct: 45, activo: true, color: "#D9A6A0", clave: "valeria2026" },
     { id: "est-camila", nombre: "Camila Flores", rol: "Estilista", especialidad: "Manicure y pedicure", telefono: "", comision_pct: 40, activo: true, color: "#B8A48A", clave: "camila2026" },

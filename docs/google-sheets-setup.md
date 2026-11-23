@@ -4,7 +4,7 @@ Esta guía deja el sitio publicado en GitHub Pages hablando con una hoja de cál
 
 Al terminar tendrás:
 
-- Una hoja con las pestañas `Config`, `Servicios`, `Barberos`, `Clientes`, `Citas`, `Ingresos`, `Gastos` y `Disponibilidad`.
+- Una hoja con las pestañas `Config`, `Servicios`, `Estilistas`, `Clientes`, `Citas`, `Ingresos`, `Gastos` y `Disponibilidad`.
 - Un Web App de Apps Script que responde a la API del sitio.
 - El sitio y el panel conectados a Google Sheets en lugar de la demo funcional local.
 
@@ -193,10 +193,10 @@ También puedes usar el workflow incluido en `.github/workflows/pages.yml`:
 | --- | --- |
 | `Config` | `clave`, `valor` |
 | `Servicios` | `id`, `nombre`, `descripcion`, `duracion_min`, `precio`, `activo`, `orden` |
-| `Barberos` | Equipo de estilistas: `id`, `nombre`, `rol`, `especialidad`, `telefono`, `comision_pct`, `activo`, `color`, `clave`, `photo_url` |
+| `Estilistas` | Equipo de estilistas: `id`, `nombre`, `rol`, `especialidad`, `telefono`, `comision_pct`, `activo`, `color`, `clave`, `photo_url` |
 | `Clientes` | `id`, `nombre`, `telefono`, `email`, `notas`, `creado_en`, `total_citas`, `total_gastado`, `ultima_visita`, `codigo_cliente` |
-| `Citas` | `id`, `fecha`, `hora`, `cliente_id`, `cliente_nombre`, `cliente_telefono`, `servicio_id`, `servicio_nombre`, `barbero_id`, `barbero_nombre`, `precio`, `duracion_min`, `estado`, `notas`, `creado_en`, `origen`, `inicio_en`, `fin_en`, `duracion_real_min` |
-| `Ingresos` | `id`, `fecha`, `monto`, `categoria`, `descripcion`, `cita_id`, `metodo_pago`, `barbero_id`, `creado_en` |
+| `Citas` | `id`, `fecha`, `hora`, `cliente_id`, `cliente_nombre`, `cliente_telefono`, `servicio_id`, `servicio_nombre`, `estilista_id`, `estilista_nombre`, `precio`, `duracion_min`, `estado`, `notas`, `creado_en`, `origen`, `inicio_en`, `fin_en`, `duracion_real_min` |
+| `Ingresos` | `id`, `fecha`, `monto`, `categoria`, `descripcion`, `cita_id`, `metodo_pago`, `estilista_id`, `creado_en` |
 | `Gastos` | `id`, `fecha`, `monto`, `categoria`, `descripcion`, `metodo_pago`, `creado_en` |
 
 Reglas importantes:

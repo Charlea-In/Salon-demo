@@ -16,7 +16,7 @@
     clientes: "Clientes",
     ingresos: "Ingresos",
     gastos: "Gastos",
-    barberos: "Estilistas",
+    estilistas: "Estilistas",
     servicios: "Servicios",
     ajustes: "Ajustes",
   };
@@ -74,7 +74,7 @@
   function resetFilters() {
     const today = U.todayISO();
     A.filters = {
-      citas: { from: today, to: U.addDays(today, 21), estado: "todas", barber: "todos", q: "", calendarDate: today },
+      citas: { from: today, to: U.addDays(today, 21), estado: "todas", estilista: "todos", q: "", calendarDate: today },
       clientes: { q: "" },
       ingresos: { from: U.startOfMonth(today), to: U.endOfMonth(today), categoria: "todas", q: "" },
       gastos: { from: U.startOfMonth(today), to: U.endOfMonth(today), categoria: "todas", q: "" },
@@ -126,7 +126,7 @@
     A.data = {
       config: data.config || {},
       services: [...(data.services || [])].sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0)),
-      barbers: [...(data.barbers || [])].sort((a, b) => String(a.nombre).localeCompare(String(b.nombre))),
+      estilistas: [...(data.estilistas || [])].sort((a, b) => String(a.nombre).localeCompare(String(b.nombre))),
       clients: [...(data.clients || [])].sort((a, b) => String(a.nombre).localeCompare(String(b.nombre))),
       appointments: [...(data.appointments || [])].sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora)),
       availabilityBlocks: data.availabilityBlocks || [],
@@ -171,7 +171,7 @@
       clientes: renderClientes,
       ingresos: renderIngresos,
       gastos: renderGastos,
-      barberos: renderBarberos,
+      estilistas: renderEstilistas,
       servicios: renderServicios,
       ajustes: renderAjustes,
     };
@@ -212,7 +212,7 @@
     return `<button class="mini-btn ${cls}" type="button" data-action="${action}" data-id="${esc(id)}" title="${esc(label)}" aria-label="${esc(label)}">${icon}</button>`;
   }
 
-  function barberPhotoUrl(value) {
+  function estilistaPhotoUrl(value) {
     try {
       const url = new URL(String(value || ""), location.href);
       if (!["http:", "https:"].includes(url.protocol)) return "";
@@ -235,9 +235,9 @@
     } catch (_) { return ""; }
   }
 
-  function barberAvatar(barber, size = "") {
-    const photo = barberPhotoUrl(barber.photo_url);
-    return `<span class="avatar ${size}" style="background:${esc(barber.color || "#C9A227")}">${U.initials(barber.nombre)}${photo ? `<img src="${esc(photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span>`;
+  function estilistaAvatar(estilista, size = "") {
+    const photo = estilistaPhotoUrl(estilista.photo_url);
+    return `<span class="avatar ${size}" style="background:${esc(estilista.color || "#C9A227")}">${U.initials(estilista.nombre)}${photo ? `<img src="${esc(photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span>`;
   }
 
   function statusOptions(selected) {
@@ -252,10 +252,10 @@
       .join("");
   }
 
-  function barberOptions(selected, includeAll = false) {
+  function estilistaOptions(selected, includeAll = false) {
     return (
       (includeAll ? `<option value="">Sin asignar</option>` : "") +
-      A.data.barbers
+      A.data.estilistas
         .map((b) => `<option value="${esc(b.id)}" ${b.id === selected ? "selected" : ""}>${esc(b.nombre)}</option>`)
         .join("")
     );
@@ -300,10 +300,10 @@
       .slice(0, 6);
 
     const monthCompleted = A.data.appointments.filter((a) => a.fecha >= monthStart && a.fecha <= monthEnd && a.estado === "completada");
-    const ranking = A.data.barbers
+    const ranking = A.data.estilistas
       .map((b) => {
-        const list = monthCompleted.filter((a) => a.barbero_id === b.id);
-        return { barber: b, count: list.length, total: U.sum(list, "precio") };
+        const list = monthCompleted.filter((a) => a.estilista_id === b.id);
+        return { estilista: b, count: list.length, total: U.sum(list, "precio") };
       })
       .sort((a, b) => b.total - a.total);
     const maxRank = Math.max(1, ...ranking.map((r) => r.total));
@@ -370,7 +370,7 @@
                       <div class="agenda__time">${esc(a.hora)}</div>
                       <div class="agenda__main">
                         <div class="agenda__client">${esc(a.cliente_nombre)}</div>
-                        <div class="agenda__service">${esc(a.servicio_nombre)} · ${esc(a.barbero_nombre)}</div>
+                        <div class="agenda__service">${esc(a.servicio_nombre)} · ${esc(a.estilista_nombre)}</div>
                       </div>
                       <div class="agenda__side">
                         ${U.statusPill(a.estado, true)}
@@ -399,7 +399,7 @@
                       <div class="agenda__time" style="font-size:16px">${esc(a.hora)}</div>
                       <div class="agenda__main">
                         <div class="agenda__client">${esc(a.cliente_nombre)}</div>
-                        <div class="agenda__service">${U.relativeDay(a.fecha)} · ${esc(a.servicio_nombre)} · ${esc(a.barbero_nombre)}</div>
+                        <div class="agenda__service">${U.relativeDay(a.fecha)} · ${esc(a.servicio_nombre)} · ${esc(a.estilista_nombre)}</div>
                       </div>
                       <div class="agenda__side">${U.statusPill(a.estado, true)}</div>
                     </div>`
@@ -423,7 +423,7 @@
                         (r, i) => `<div class="rank-row">
                           <span class="rank-num">${String(i + 1).padStart(2, "0")}</span>
                           <div>
-                            <div class="rank-name">${esc(r.barber.nombre)}</div>
+                            <div class="rank-name">${esc(r.estilista.nombre)}</div>
                             <div class="rank-meta">${r.count} servicios completados</div>
                             <div class="rank-bar"><span style="width:${Math.round((r.total / maxRank) * 100)}%"></span></div>
                           </div>
@@ -533,8 +533,8 @@
     const today = U.todayISO();
     const monthStart = U.startOfMonth(today);
     const monthEnd = U.endOfMonth(today);
-    const barbers = A.data.barbers.filter((b) => b.activo !== false);
-    const team = barbers.length ? barbers : A.data.barbers;
+    const estilistas = A.data.estilistas.filter((b) => b.activo !== false);
+    const team = estilistas.length ? estilistas : A.data.estilistas;
     const todayAppts = A.data.appointments.filter((a) => a.fecha === today);
     const activeToday = todayAppts.filter((a) => !["cancelada", "no_asistio"].includes(a.estado));
     const monthDone = A.data.appointments.filter(
@@ -552,7 +552,7 @@
     let commissionToday = 0;
     team.forEach((b) => {
       const serviceIncome = U.sum(
-        todayIncomes.filter((i) => i.barbero_id === b.id && i.categoria === "Servicio"),
+        todayIncomes.filter((i) => i.estilista_id === b.id && i.categoria === "Servicio"),
         "monto"
       );
       commissionToday += (serviceIncome * (Number(b.comision_pct) || 0)) / 100;
@@ -570,9 +570,9 @@
 
     const rows = team
       .map((b) => {
-        const mineToday = todayAppts.filter((a) => a.barbero_id === b.id);
-        const mineMonthDone = monthDone.filter((a) => a.barbero_id === b.id);
-        const mineMonthIncomes = monthIncomes.filter((i) => i.barbero_id === b.id);
+        const mineToday = todayAppts.filter((a) => a.estilista_id === b.id);
+        const mineMonthDone = monthDone.filter((a) => a.estilista_id === b.id);
+        const mineMonthIncomes = monthIncomes.filter((i) => i.estilista_id === b.id);
         const mineServiceIncome = U.sum(
           mineMonthIncomes.filter((i) => i.categoria === "Servicio"),
           "monto"
@@ -709,9 +709,9 @@
       if (f.from && a.fecha < f.from) return false;
       if (f.to && a.fecha > f.to) return false;
       if (f.estado !== "todas" && a.estado !== f.estado) return false;
-      if (f.barber !== "todos" && a.barbero_id !== f.barber) return false;
+      if (f.estilista !== "todos" && a.estilista_id !== f.estilista) return false;
       if (q) {
-        const haystack = `${a.cliente_nombre} ${a.cliente_telefono} ${a.servicio_nombre} ${a.barbero_nombre}`.toLowerCase();
+        const haystack = `${a.cliente_nombre} ${a.cliente_telefono} ${a.servicio_nombre} ${a.estilista_nombre}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
@@ -741,9 +741,9 @@
             <option value="todas" ${f.estado === "todas" ? "selected" : ""}>Todos los estados</option>
             ${STATUS_OPTIONS.map((o) => `<option value="${o.value}" ${f.estado === o.value ? "selected" : ""}>${o.label}</option>`).join("")}
           </select>
-          <select class="select" data-filter="citas.barber" aria-label="Estilista">
-            <option value="todos" ${f.barber === "todos" ? "selected" : ""}>Todos los estilistas</option>
-            ${A.data.barbers.map((b) => `<option value="${esc(b.id)}" ${f.barber === b.id ? "selected" : ""}>${esc(b.nombre)}</option>`).join("")}
+          <select class="select" data-filter="citas.estilista" aria-label="Estilista">
+            <option value="todos" ${f.estilista === "todos" ? "selected" : ""}>Todos los estilistas</option>
+            ${A.data.estilistas.map((b) => `<option value="${esc(b.id)}" ${f.estilista === b.id ? "selected" : ""}>${esc(b.nombre)}</option>`).join("")}
           </select>
           <input class="input" type="search" data-filter="citas.q" value="${esc(f.q)}" placeholder="Buscar cliente o servicio" aria-label="Buscar">
           <span class="filters__spacer"></span>
@@ -754,8 +754,8 @@
       <div class="card daycal-card">
         <div class="card__head"><div><div class="card__title">Calendario diario</div><div class="sub">Horario completo del negocio</div></div>
           <div class="daycal-filters"><input class="input" type="date" data-filter="citas.calendarDate" value="${esc(f.calendarDate || U.todayISO())}" aria-label="Fecha del calendario">
-          <select class="select" data-filter="citas.barber"><option value="todos" ${f.barber === "todos" ? "selected" : ""}>Todos los estilistas</option>${A.data.barbers.map(b => `<option value="${esc(b.id)}" ${f.barber === b.id ? "selected" : ""}>${esc(b.nombre)}</option>`).join("")}</select></div>
-        </div><div class="card__body">${DayCalendar.render({ date: f.calendarDate || U.todayISO(), appointments: A.data.appointments, blocks: A.data.availabilityBlocks, barbers: A.data.barbers, barberId: f.barber, config: A.data.config })}</div>
+          <select class="select" data-filter="citas.estilista"><option value="todos" ${f.estilista === "todos" ? "selected" : ""}>Todos los estilistas</option>${A.data.estilistas.map(b => `<option value="${esc(b.id)}" ${f.estilista === b.id ? "selected" : ""}>${esc(b.nombre)}</option>`).join("")}</select></div>
+        </div><div class="card__body">${DayCalendar.render({ date: f.calendarDate || U.todayISO(), appointments: A.data.appointments, blocks: A.data.availabilityBlocks, estilistas: A.data.estilistas, estilistaId: f.estilista, config: A.data.config })}</div>
       </div>`;
   }
 
@@ -772,7 +772,7 @@
             <td class="num" data-label="Hora">${esc(a.hora)}</td>
             <td data-label="Cliente"><div class="cell-stack"><div class="strong">${esc(a.cliente_nombre)}</div><div class="sub">${esc(a.cliente_telefono)}</div></div></td>
             <td data-label="Servicio"><div class="cell-stack"><div>${esc(a.servicio_nombre)}</div><div class="sub">${a.duracion_min} min</div></div></td>
-            <td data-label="Estilista">${esc(a.barbero_nombre)}</td>
+            <td data-label="Estilista">${esc(a.estilista_nombre)}</td>
             <td class="num strong" data-label="Total">${money(a.precio)}</td>
             <td data-label="Estado">${U.statusPill(a.estado, true)}</td>
             <td data-label="">
@@ -917,7 +917,7 @@
                         <td data-label="Categoría">${esc(i.categoria)}</td>
                         <td data-label="Descripción">${esc(i.descripcion || "—")}</td>
                         <td data-label="Método">${esc(i.metodo_pago || "—")}</td>
-                        <td data-label="Estilista">${esc((A.data.barbers.find((b) => b.id === i.barbero_id) || {}).nombre || "—")}</td>
+                        <td data-label="Estilista">${esc((A.data.estilistas.find((b) => b.id === i.estilista_id) || {}).nombre || "—")}</td>
                         <td class="num strong" data-label="Monto">${money(i.monto)}</td>
                         <td data-label=""><div class="row-actions">
                           ${miniBtn("edit-income", i.id, ICON.edit, "Editar ingreso")}
@@ -1015,7 +1015,7 @@
   }
 
   /* ---------- ESTILISTAS ---------- */
-  function renderBarberos() {
+  function renderEstilistas() {
     const monthStart = U.startOfMonth();
     const monthEnd = U.endOfMonth();
     const completed = A.data.appointments.filter(
@@ -1028,55 +1028,55 @@
           <p class="view-head__sub">Equipo, especialidades y rendimiento del mes.</p>
         </div>
         <div class="view-head__actions">
-          <button class="btn-admin btn-admin--primary" type="button" data-action="new-barber">Agregar estilista</button>
+          <button class="btn-admin btn-admin--primary" type="button" data-action="new-estilista">Agregar estilista</button>
         </div>
       </div>
 
-      <div class="barbers-admin-grid">
-        ${A.data.barbers
+      <div class="estilistas-admin-grid">
+        ${A.data.estilistas
           .map((b) => {
-            const list = completed.filter((a) => a.barbero_id === b.id);
+            const list = completed.filter((a) => a.estilista_id === b.id);
             const avg = avgMinutes(
               A.data.appointments.filter(
-                (a) => a.barbero_id === b.id && a.fecha >= U.addDays(U.todayISO(), -30)
+                (a) => a.estilista_id === b.id && a.fecha >= U.addDays(U.todayISO(), -30)
               )
             );
             const live = A.data.appointments.find(
-              (a) => a.barbero_id === b.id && a.estado === "en_curso"
+              (a) => a.estilista_id === b.id && a.estado === "en_curso"
             );
-            return `<div class="barber-admin-card" style="${b.activo === false ? "opacity:.6" : ""}">
-              <div class="barber-admin-card__top">
-                ${barberAvatar(b, "avatar--lg")}
+            return `<div class="estilista-admin-card" style="${b.activo === false ? "opacity:.6" : ""}">
+              <div class="estilista-admin-card__top">
+                ${estilistaAvatar(b, "avatar--lg")}
                 <div>
                   <h3>${esc(b.nombre)}</h3>
                   <div class="sub">${esc(b.rol || "Estilista")} · ${esc(b.especialidad || "General")}</div>
                   <div class="sub">${esc(b.telefono || "Sin teléfono")}</div>
                 </div>
               </div>
-              <div class="barber-admin-card__stats">
-                <div class="barber-admin-card__stat"><span>Citas mes</span><b>${list.length}</b></div>
-                <div class="barber-admin-card__stat"><span>Ingresos</span><b>${money(U.sum(list, "precio"))}</b></div>
-                <div class="barber-admin-card__stat"><span>Prom. servicio</span><b>${avg ? avg + "'" : "—"}</b></div>
-                <div class="barber-admin-card__stat"><span>Comisión</span><b>${Number(b.comision_pct) || 0}%</b></div>
+              <div class="estilista-admin-card__stats">
+                <div class="estilista-admin-card__stat"><span>Citas mes</span><b>${list.length}</b></div>
+                <div class="estilista-admin-card__stat"><span>Ingresos</span><b>${money(U.sum(list, "precio"))}</b></div>
+                <div class="estilista-admin-card__stat"><span>Prom. servicio</span><b>${avg ? avg + "'" : "—"}</b></div>
+                <div class="estilista-admin-card__stat"><span>Comisión</span><b>${Number(b.comision_pct) || 0}%</b></div>
               </div>
               ${
                 live
-                  ? `<div class="barber-live"><i class="dot-live dot-live--busy"></i> En servicio ahora · <span class="mono" data-live-elapsed="${esc(live.inicio_en)}">00:00</span></div>`
+                  ? `<div class="estilista-live"><i class="dot-live dot-live--busy"></i> En servicio ahora · <span class="mono" data-live-elapsed="${esc(live.inicio_en)}">00:00</span></div>`
                   : ""
               }
-              <div class="barber-access">
-                <span class="barber-access__label">Acceso</span>
+              <div class="estilista-access">
+                <span class="estilista-access__label">Acceso</span>
                 ${
                   b.clave
                     ? `<code class="mono">${esc(b.clave)}</code><button class="mini-btn" type="button" data-action="copy-key" data-key="${esc(b.clave)}">Copiar</button>`
                     : `<span class="sub">Sin clave</span>`
                 }
               </div>
-              <div class="barber-admin-card__actions">
+              <div class="estilista-admin-card__actions">
                 <a class="mini-btn mini-btn--primary" href="estilista.html" target="_blank" rel="noopener">Panel</a>
-                ${miniBtn("edit-barber", b.id, ICON.edit, "Editar estilista")}
-                <button class="mini-btn" type="button" data-action="toggle-barber" data-id="${esc(b.id)}">${b.activo === false ? "Activar" : "Desactivar"}</button>
-                ${miniBtn("delete-barber", b.id, ICON.trash, "Eliminar estilista", "mini-btn--danger")}
+                ${miniBtn("edit-estilista", b.id, ICON.edit, "Editar estilista")}
+                <button class="mini-btn" type="button" data-action="toggle-estilista" data-id="${esc(b.id)}">${b.activo === false ? "Activar" : "Desactivar"}</button>
+                ${miniBtn("delete-estilista", b.id, ICON.trash, "Eliminar estilista", "mini-btn--danger")}
               </div>
             </div>`;
           })
@@ -1256,7 +1256,7 @@
                   (a) => `<div class="history-item">
                     <div>
                       <div>${esc(a.servicio_nombre)}</div>
-                      <div class="history-item__meta">${U.formatDate(a.fecha, "short")} · ${esc(a.hora)} · ${esc(a.barbero_nombre)}</div>
+                      <div class="history-item__meta">${U.formatDate(a.fecha, "short")} · ${esc(a.hora)} · ${esc(a.estilista_nombre)}</div>
                     </div>
                     <div style="text-align:right">
                       <div>${money(a.precio)}</div>
@@ -1286,18 +1286,18 @@
   }
 
   /* ---------- FORMULARIOS ---------- */
-  function openAppointmentForm(id, presetClientId, presetBarberId) {
+  function openAppointmentForm(id, presetClientId, presetEstilistaId) {
     const appt = id ? apptById(id) : null;
     const presetClient = presetClientId ? clientById(presetClientId) : null;
-    const defaultBarber = presetBarberId || "";
+    const defaultEstilista = presetEstilistaId || "";
     const services = A.data.services;
-    const barbers = A.data.barbers;
+    const estilistas = A.data.estilistas;
 
     if (!services.length) {
       U.toast("Primero agrega al menos un servicio.", "error");
       return;
     }
-    if (!barbers.length) {
+    if (!estilistas.length) {
       U.toast("Primero agrega al menos una estilista.", "error");
       return;
     }
@@ -1306,7 +1306,7 @@
       { name: "cliente_nombre", label: "Cliente", required: true, value: appt ? appt.cliente_nombre : presetClient ? presetClient.nombre : "", placeholder: "Nombre completo" },
       { name: "cliente_telefono", label: "Teléfono salvadoreño", type: "tel", required: true, value: appt ? appt.cliente_telefono : presetClient ? presetClient.telefono : "", placeholder: "0000 0000" },
       { name: "servicio_id", label: "Servicio", type: "select", required: true, options: services.map((s) => ({ value: s.id, label: `${s.nombre} · ${money(s.precio)}` })), value: appt ? appt.servicio_id : services[0].id },
-      { name: "barbero_id", label: "Estilista", type: "select", required: true, options: barbers.map((b) => ({ value: b.id, label: b.nombre })), value: appt ? appt.barbero_id : defaultBarber || barbers[0].id },
+      { name: "estilista_id", label: "Estilista", type: "select", required: true, options: estilistas.map((b) => ({ value: b.id, label: b.nombre })), value: appt ? appt.estilista_id : defaultEstilista || estilistas[0].id },
       { name: "fecha", label: "Fecha", type: "date", required: true, value: appt ? appt.fecha : U.todayISO() },
       { name: "hora", label: "Hora", type: "time", required: true, value: appt ? appt.hora : "10:00" },
       {
@@ -1362,9 +1362,9 @@
     });
   }
 
-  function openIncomeForm(id, presetBarberId) {
+  function openIncomeForm(id, presetEstilistaId) {
     const item = id ? A.data.incomes.find((i) => i.id === id) : null;
-    const defaultBarber = presetBarberId || "";
+    const defaultEstilista = presetEstilistaId || "";
     U.formModal({
       title: item ? "Editar ingreso" : "Registrar ingreso",
       subtitle: "Servicios, productos, propinas u otros.",
@@ -1374,7 +1374,7 @@
         { name: "categoria", label: "Categoría", type: "select", options: ["Servicio", "Productos", "Propinas", "Otros"], value: item ? item.categoria : "Servicio" },
         { name: "metodo_pago", label: "Método de pago", type: "select", options: PAYMENT_OPTIONS, value: item ? item.metodo_pago : "Efectivo" },
         { name: "descripcion", label: "Descripción", full: true, value: item ? item.descripcion || "" : "", placeholder: "Ej. Mascarilla de keratina, combo de uñas..." },
-        { name: "barbero_id", label: "Estilista (opcional)", type: "select", options: [{ value: "", label: "Sin asignar" }, ...A.data.barbers.map((b) => ({ value: b.id, label: b.nombre }))], value: item ? item.barbero_id || "" : defaultBarber },
+        { name: "estilista_id", label: "Estilista (opcional)", type: "select", options: [{ value: "", label: "Sin asignar" }, ...A.data.estilistas.map((b) => ({ value: b.id, label: b.nombre }))], value: item ? item.estilista_id || "" : defaultEstilista },
       ],
       submitText: item ? "Guardar cambios" : "Registrar",
       onSubmit: async (values, { close }) => {
@@ -1410,29 +1410,29 @@
     });
   }
 
-  function openBarberForm(id) {
-    const barber = id ? A.data.barbers.find((b) => b.id === id) : null;
+  function openEstilistaForm(id) {
+    const estilista = id ? A.data.estilistas.find((b) => b.id === id) : null;
     U.formModal({
-      title: barber ? "Editar estilista" : "Agregar estilista",
+      title: estilista ? "Editar estilista" : "Agregar estilista",
       subtitle: "Datos del equipo y comisión.",
       fields: [
-        { name: "nombre", label: "Nombre", required: true, value: barber ? barber.nombre : "" },
-        { name: "rol", label: "Rol", value: barber ? barber.rol || "" : "Estilista", placeholder: "Fundadora, senior, estilista..." },
-        { name: "especialidad", label: "Especialidad", full: true, value: barber ? barber.especialidad || "" : "", placeholder: "Color, uñas, maquillaje..." },
-        { name: "telefono", label: "Teléfono", type: "tel", value: barber ? barber.telefono || "" : "" },
-        { name: "photo_url", label: "Foto de perfil (URL)", type: "url", full: true, value: barber ? barber.photo_url || "" : "", placeholder: "https://…" },
-        { name: "clave", label: "Clave del panel de estilista", value: barber ? barber.clave || "" : "", placeholder: "Mínimo 6 caracteres", hint: "La usa en estilista.html. Déjala vacía para bloquear su acceso." },
-        { name: "comision_pct", label: "Comisión (%)", type: "number", min: 0, step: 1, value: barber ? barber.comision_pct : 40 },
-        { name: "color", label: "Color", type: "color", value: barber ? barber.color || "#C9A227" : "#C9A227" },
-        { name: "activo", label: "Activo en la agenda", type: "checkbox", value: barber ? barber.activo !== false : true },
+        { name: "nombre", label: "Nombre", required: true, value: estilista ? estilista.nombre : "" },
+        { name: "rol", label: "Rol", value: estilista ? estilista.rol || "" : "Estilista", placeholder: "Fundadora, senior, estilista..." },
+        { name: "especialidad", label: "Especialidad", full: true, value: estilista ? estilista.especialidad || "" : "", placeholder: "Color, uñas, maquillaje..." },
+        { name: "telefono", label: "Teléfono", type: "tel", value: estilista ? estilista.telefono || "" : "" },
+        { name: "photo_url", label: "Foto de perfil (URL)", type: "url", full: true, value: estilista ? estilista.photo_url || "" : "", placeholder: "https://…" },
+        { name: "clave", label: "Clave del panel de estilista", value: estilista ? estilista.clave || "" : "", placeholder: "Mínimo 6 caracteres", hint: "La usa en estilista.html. Déjala vacía para bloquear su acceso." },
+        { name: "comision_pct", label: "Comisión (%)", type: "number", min: 0, step: 1, value: estilista ? estilista.comision_pct : 40 },
+        { name: "color", label: "Color", type: "color", value: estilista ? estilista.color || "#C9A227" : "#C9A227" },
+        { name: "activo", label: "Activo en la agenda", type: "checkbox", value: estilista ? estilista.activo !== false : true },
       ],
-      submitText: barber ? "Guardar cambios" : "Agregar",
+      submitText: estilista ? "Guardar cambios" : "Agregar",
       onSubmit: async (values, { close }) => {
-        await S.save("barbers", { ...values, id: barber ? barber.id : undefined });
+        await S.save("estilistas", { ...values, id: estilista ? estilista.id : undefined });
         await loadData();
         renderView();
         close();
-        U.toast(barber ? "Estilista actualizada." : "Estilista agregada.", "success");
+        U.toast(estilista ? "Estilista actualizada." : "Estilista agregada.", "success");
       },
     });
   }
@@ -1520,17 +1520,17 @@
           await deleteRecord("expenses", id, "este gasto");
           break;
 
-        case "new-barber":
-          openBarberForm();
+        case "new-estilista":
+          openEstilistaForm();
           break;
-        case "edit-barber":
-          openBarberForm(id);
+        case "edit-estilista":
+          openEstilistaForm(id);
           break;
-        case "toggle-barber":
-          await toggleActive("barbers", id);
+        case "toggle-estilista":
+          await toggleActive("estilistas", id);
           break;
-        case "delete-barber":
-          await deleteRecord("barbers", id, "esta estilista");
+        case "delete-estilista":
+          await deleteRecord("estilistas", id, "esta estilista");
           break;
 
         case "new-service":
@@ -1728,7 +1728,7 @@
         Cliente: a.cliente_nombre,
         Telefono: a.cliente_telefono,
         Servicio: a.servicio_nombre,
-        Estilista: a.barbero_nombre,
+        Estilista: a.estilista_nombre,
         Precio: a.precio,
         Estado: a.estado,
         Origen: a.origen || "",
@@ -1754,7 +1754,7 @@
         Descripcion: i.descripcion || "",
         Metodo: i.metodo_pago || "",
         Monto: i.monto,
-        Estilista: (A.data.barbers.find((b) => b.id === i.barbero_id) || {}).nombre || "",
+        Estilista: (A.data.estilistas.find((b) => b.id === i.estilista_id) || {}).nombre || "",
       }));
     } else {
       rows = list.map((e) => ({

@@ -54,7 +54,7 @@ Los precios y contactos de `js/config.js` y `apps-script/Code.gs` son valores de
 
 Los números de clientas de ejemplo usan valores de prueba y no son números de contacto. Para clientas reales, se validan 8 dígitos locales; los formularios también reconocen el prefijo internacional `+503`.
 
-En Google Sheets, la configuración del negocio, el catálogo, las citas, clientas y datos financieros viven en las pestañas creadas por `setup()`. La pestaña **Barberos** conserva ese nombre y el campo `barbero_id` por compatibilidad interna, pero en la interfaz todo se muestra como **Estilistas**. La ejecución de `migrar()` actualiza encabezados y asigna códigos de clienta faltantes.
+En Google Sheets, la configuración del negocio, el catálogo, las citas, clientas y datos financieros viven en las pestañas creadas por `setup()`. La pestaña **Estilistas** conserva ese nombre y el campo `estilista_id` por compatibilidad interna, pero en la interfaz todo se muestra como **Estilistas**. La ejecución de `migrar()` actualiza encabezados y asigna códigos de clienta faltantes.
 
 ## Publicar en GitHub Pages
 

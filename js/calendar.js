@@ -2,14 +2,14 @@
 (function () {
   const esc = (v) => window.UI.esc(v || "");
   const statusClass = (s) => ({ Receso: "break", Almuerzo: "lunch", "No disponible": "blocked", Disponible: "available" }[s] || "blocked");
-  function render({ date, appointments = [], blocks = [], barbers = [], barberId = "todos", editable = false, config = {} }) {
+  function render({ date, appointments = [], blocks = [], estilistas = [], estilistaId = "todos", editable = false, config = {} }) {
     const start = window.UI.minutesFromTime(config.hora_inicio || "00:00");
     let end = window.UI.minutesFromTime(config.hora_fin || "23:59");
     if (end <= start) end = 1439;
     const span = Math.max(60, end - start);
     const events = [];
-    appointments.filter(a => a.fecha === date && !["cancelada", "no_asistio"].includes(a.estado) && (barberId === "todos" || a.barbero_id === barberId)).forEach(a => events.push({ start: window.UI.minutesFromTime(a.hora), end: window.UI.minutesFromTime(a.hora) + (Number(a.duracion_min) || 30), title: a.cliente_nombre, sub: `${a.servicio_nombre} · ${a.barbero_nombre}`, kind: "appointment", color: "" }));
-    blocks.filter(b => b.fecha === date && (barberId === "todos" || b.barbero_id === barberId)).forEach(b => events.push({ id: b.id, start: window.UI.minutesFromTime(b.hora_inicio), end: window.UI.minutesFromTime(b.hora_fin), title: b.estado, sub: `${(barbers.find(x => x.id === b.barbero_id) || {}).nombre || ""}${b.notas ? ` · ${b.notas}` : ""}`, kind: statusClass(b.estado), block: b }));
+    appointments.filter(a => a.fecha === date && !["cancelada", "no_asistio"].includes(a.estado) && (estilistaId === "todos" || a.estilista_id === estilistaId)).forEach(a => events.push({ start: window.UI.minutesFromTime(a.hora), end: window.UI.minutesFromTime(a.hora) + (Number(a.duracion_min) || 30), title: a.cliente_nombre, sub: `${a.servicio_nombre} · ${a.estilista_nombre}`, kind: "appointment", color: "" }));
+    blocks.filter(b => b.fecha === date && (estilistaId === "todos" || b.estilista_id === estilistaId)).forEach(b => events.push({ id: b.id, start: window.UI.minutesFromTime(b.hora_inicio), end: window.UI.minutesFromTime(b.hora_fin), title: b.estado, sub: `${(estilistas.find(x => x.id === b.estilista_id) || {}).nombre || ""}${b.notas ? ` · ${b.notas}` : ""}`, kind: statusClass(b.estado), block: b }));
     events.forEach((e, i) => {
       const overlapping = events.filter((x, j) => j !== i && x.start < e.end && x.end > e.start);
       const lane = overlapping.filter(x => x.start < e.start || (x.start === e.start && events.indexOf(x) < i)).length;

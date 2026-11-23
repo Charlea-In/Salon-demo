@@ -25,7 +25,7 @@ const TZ = "America/El_Salvador";
 const SHEETS = {
   config: "Config",
   services: "Servicios",
-  barbers: "Barberos",
+  estilistas: "Estilistas",
   clients: "Clientes",
   appointments: "Citas",
   incomes: "Ingresos",
@@ -36,17 +36,17 @@ const SHEETS = {
 const HEADERS = {
   config: ["clave", "valor"],
   services: ["id", "nombre", "descripcion", "duracion_min", "precio", "activo", "orden"],
-  barbers: ["id", "nombre", "rol", "especialidad", "telefono", "comision_pct", "activo", "color", "clave", "photo_url"],
+  estilistas: ["id", "nombre", "rol", "especialidad", "telefono", "comision_pct", "activo", "color", "clave", "photo_url"],
   clients: ["id", "nombre", "telefono", "email", "notas", "creado_en", "total_citas", "total_gastado", "ultima_visita", "codigo_cliente"],
   appointments: [
     "id", "fecha", "hora", "cliente_id", "cliente_nombre", "cliente_telefono",
-    "servicio_id", "servicio_nombre", "barbero_id", "barbero_nombre",
+    "servicio_id", "servicio_nombre", "estilista_id", "estilista_nombre",
     "precio", "duracion_min", "estado", "notas", "creado_en", "origen",
     "inicio_en", "fin_en", "duracion_real_min",
   ],
-  incomes: ["id", "fecha", "monto", "categoria", "descripcion", "cita_id", "metodo_pago", "barbero_id", "creado_en"],
+  incomes: ["id", "fecha", "monto", "categoria", "descripcion", "cita_id", "metodo_pago", "estilista_id", "creado_en"],
   expenses: ["id", "fecha", "monto", "categoria", "descripcion", "metodo_pago", "creado_en"],
-  availabilityBlocks: ["id", "barbero_id", "fecha", "hora_inicio", "hora_fin", "estado", "notas", "creado_en"],
+  availabilityBlocks: ["id", "estilista_id", "fecha", "hora_inicio", "hora_fin", "estado", "notas", "creado_en"],
 };
 
 // Columnas que deben guardarse como texto para que Sheets no las
@@ -54,7 +54,7 @@ const HEADERS = {
 const TEXT_COLUMNS = {
   config: ["valor"],
   services: [],
-  barbers: ["clave", "photo_url"],
+  estilistas: ["clave", "photo_url"],
   clients: ["telefono", "creado_en", "ultima_visita", "codigo_cliente"],
   appointments: ["fecha", "hora", "cliente_telefono", "creado_en", "inicio_en", "fin_en"],
   incomes: ["fecha", "creado_en"],
@@ -94,7 +94,7 @@ const DEFAULTS = {
     { id: "srv-peinado", nombre: "Peinado", descripcion: "Ondas, recogidos o peinado de evento.", duracion_min: 45, precio: 22, activo: true, orden: 13 },
     { id: "srv-depilacion", nombre: "Depilación con cera", descripcion: "Depilación facial o corporal con cera tibia.", duracion_min: 30, precio: 15, activo: true, orden: 14 },
   ],
-  barbers: [
+  estilistas: [
     // En una instalación real, la dueña asigna las claves desde el admin.
     { id: "est-daniela", nombre: "Daniela Rivas", rol: "Fundadora", especialidad: "Color y balayage", telefono: "", comision_pct: 50, activo: true, color: "#C9A227", clave: "" },
     { id: "est-valeria", nombre: "Valeria Cruz", rol: "Estilista senior", especialidad: "Cortes y peinados", telefono: "", comision_pct: 45, activo: true, color: "#D9A6A0", clave: "" },
@@ -104,7 +104,7 @@ const DEFAULTS = {
 };
 
 const STATUSES = ["pendiente", "confirmada", "en_curso", "completada", "cancelada", "no_asistio"];
-const PREFIXES = { services: "srv", barbers: "est", clients: "cl", appointments: "apt", incomes: "inc", expenses: "exp", availabilityBlocks: "avl" };
+const PREFIXES = { services: "srv", estilistas: "est", clients: "cl", appointments: "apt", incomes: "inc", expenses: "exp", availabilityBlocks: "avl" };
 
 /* ============================================================
    INSTALACIÓN
@@ -138,7 +138,7 @@ function setup() {
 
   seedConfig_();
   seedRecords_("services", DEFAULTS.services);
-  seedRecords_("barbers", DEFAULTS.barbers);
+  seedRecords_("estilistas", DEFAULTS.estilistas);
   assignMissingClientCodes_(getRecords_("clients"));
 
   // Elimina la hoja vacía por defecto si sigue ahí.
@@ -183,7 +183,7 @@ function migrar() {
   });
   const configUpdates = {};
   const legacyValues = {
-    nombre_negocio: { old: ["Demo Barber"], value: "Aurea Salón" },
+    nombre_negocio: { old: ["Demo Estilista"], value: "Aurea Salón" },
     ciudad: { old: ["El Salvador"], value: "San Salvador, El Salvador" },
     telefono: { old: [], value: "" },
     whatsapp: { old: [], value: "" },
@@ -204,10 +204,10 @@ function migrar() {
 
   const demoKeys = [];
   let cleared = 0;
-  getRecords_("barbers").forEach((barber) => {
-    if (demoKeys.indexOf(str_(barber.clave)) === -1) return;
-    barber.clave = "";
-    writeRecord_("barbers", barber);
+  getRecords_("estilistas").forEach((estilista) => {
+    if (demoKeys.indexOf(str_(estilista.clave)) === -1) return;
+    estilista.clave = "";
+    writeRecord_("estilistas", estilista);
     cleared += 1;
   });
   Logger.log("✅ Hojas actualizadas. Códigos de cliente asignados: " + clientCodesAdded + ". Claves de demo eliminadas: " + cleared + ". Configuración del negocio actualizada: " + Object.keys(configUpdates).join(", ") + ". Precios de ejemplo ajustados a USD: " + migratedServicePrices + ".");
@@ -287,26 +287,26 @@ function doPost(e) {
         requireAdmin_(payload);
         data = withLock_(() => setStatus_(payload));
         break;
-      case "barberLogin":
-        data = barberLogin_(payload);
+      case "estilistaLogin":
+        data = estilistaLogin_(payload);
         break;
-      case "barberData":
-        data = barberData_(requireBarber_(payload));
+      case "estilistaData":
+        data = estilistaData_(requireEstilista_(payload));
         break;
-      case "barberAvailabilitySave":
-        data = withLock_(() => barberAvailabilitySave_(payload));
+      case "estilistaAvailabilitySave":
+        data = withLock_(() => estilistaAvailabilitySave_(payload));
         break;
-      case "barberAvailabilityDelete":
-        data = withLock_(() => barberAvailabilityDelete_(payload));
+      case "estilistaAvailabilityDelete":
+        data = withLock_(() => estilistaAvailabilityDelete_(payload));
         break;
-      case "barberSave":
-        data = withLock_(() => barberSave_(payload));
+      case "estilistaSave":
+        data = withLock_(() => estilistaSave_(payload));
         break;
-      case "barberDelete":
-        data = withLock_(() => barberDelete_(payload));
+      case "estilistaDelete":
+        data = withLock_(() => estilistaDelete_(payload));
         break;
-      case "barberSetStatus":
-        data = withLock_(() => barberSetStatus_(payload));
+      case "estilistaSetStatus":
+        data = withLock_(() => estilistaSetStatus_(payload));
         break;
       default:
         throw new Error("Acción no válida: " + action);
@@ -328,14 +328,14 @@ function bootstrap_() {
     services: getRecords_("services")
       .filter((s) => s.activo !== false)
       .sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0)),
-    barbers: getRecords_("barbers").filter((b) => b.activo !== false).map(publicBarber_),
+    estilistas: getRecords_("estilistas").filter((b) => b.activo !== false).map(publicEstilista_),
     config: config,
     schedule: scheduleFrom_(config),
   };
 }
 
 function availability_(payload) {
-  return computeAvailability_(payload.date, payload.serviceId, payload.barberId);
+  return computeAvailability_(payload.date, payload.serviceId, payload.estilistaId);
 }
 
 function book_(payload) {
@@ -357,22 +357,22 @@ function book_(payload) {
   const svc = services.filter((s) => s.id === payload.servicio_id && s.activo !== false)[0];
   if (!svc) throw new Error("El servicio ya no está disponible.");
 
-  const availability = computeAvailability_(fecha, payload.servicio_id, payload.barbero_id || "any");
+  const availability = computeAvailability_(fecha, payload.servicio_id, payload.estilista_id || "any");
   if (availability.closed) throw new Error("Ese día el salón está cerrado.");
   const slot = availability.slots.filter((s) => s.time === hora)[0];
   if (!slot) {
     const start = minutesFromTime_(hora);
     const end = start + (Number(svc.duracion_min) || 30);
-    const blocked = getRecords_("availabilityBlocks").some((x) => x.fecha === fecha && x.estado !== "Disponible" && (!payload.barbero_id || payload.barbero_id === "any" || x.barbero_id === payload.barbero_id) && start < minutesFromTime_(x.hora_fin) && end > minutesFromTime_(x.hora_inicio));
+    const blocked = getRecords_("availabilityBlocks").some((x) => x.fecha === fecha && x.estado !== "Disponible" && (!payload.estilista_id || payload.estilista_id === "any" || x.estilista_id === payload.estilista_id) && start < minutesFromTime_(x.hora_fin) && end > minutesFromTime_(x.hora_inicio));
     if (blocked) throw new Error("La estilista no está disponible en ese horario. Elige otra hora.");
     throw new Error("Ese horario acaba de ocuparse. Elige otro.");
   }
 
-  const barberId = payload.barbero_id && payload.barbero_id !== "any" ? payload.barbero_id : slot.barbers[0];
-  if (slot.barbers.indexOf(barberId) === -1) throw new Error("Esa estilista ya no tiene espacio a esa hora.");
+  const estilistaId = payload.estilista_id && payload.estilista_id !== "any" ? payload.estilista_id : slot.estilistas[0];
+  if (slot.estilistas.indexOf(estilistaId) === -1) throw new Error("Esa estilista ya no tiene espacio a esa hora.");
 
-  const barber = getRecords_("barbers").filter((b) => b.id === barberId)[0];
-  if (!barber) throw new Error("Estilista no encontrada.");
+  const estilista = getRecords_("estilistas").filter((b) => b.id === estilistaId)[0];
+  if (!estilista) throw new Error("Estilista no encontrada.");
 
   const phoneNorm = normalizePhone_(telefono);
   const appointments = getRecords_("appointments");
@@ -400,8 +400,8 @@ function book_(payload) {
     cliente_telefono: client.telefono,
     servicio_id: svc.id,
     servicio_nombre: svc.nombre,
-    barbero_id: barber.id,
-    barbero_nombre: barber.nombre,
+    estilista_id: estilista.id,
+    estilista_nombre: estilista.nombre,
     precio: Number(svc.precio) || 0,
     duracion_min: Number(svc.duracion_min) || 30,
     estado: "pendiente",
@@ -470,7 +470,7 @@ function adminData_() {
     version: 1,
     config: getConfig_(),
     services: getRecords_("services"),
-    barbers: getRecords_("barbers"),
+    estilistas: getRecords_("estilistas"),
     clients: getRecords_("clients"),
     appointments: getRecords_("appointments"),
     incomes: getRecords_("incomes"),
@@ -486,7 +486,7 @@ function adminData_() {
    en el panel de la dueña.
    ============================================================ */
 
-function publicBarber_(b) {
+function publicEstilista_(b) {
   return {
     id: b.id,
     nombre: b.nombre,
@@ -498,37 +498,37 @@ function publicBarber_(b) {
   };
 }
 
-function selfBarber_(b) {
-  const base = publicBarber_(b);
+function selfEstilista_(b) {
+  const base = publicEstilista_(b);
   base.comision_pct = Number(b.comision_pct) || 0;
   return base;
 }
 
-function requireBarber_(payload) {
+function requireEstilista_(payload) {
   const clave = str_(payload.clave);
   if (!clave) throw new Error("Escribe tu clave personal.");
-  checkLoginBlocked_("barber");
-  const barbers = getRecords_("barbers");
-  let barber = null;
-  barbers.forEach((candidate) => {
+  checkLoginBlocked_("estilista");
+  const estilistas = getRecords_("estilistas");
+  let estilista = null;
+  estilistas.forEach((candidate) => {
     const storedKey = str_(candidate.clave);
     const matches = secureStringEquals_(clave, storedKey) && storedKey.length >= 10;
-    if (candidate.activo !== false && matches) barber = candidate;
+    if (candidate.activo !== false && matches) estilista = candidate;
   });
-  if (!barber) {
-    recordLoginFailure_("barber");
+  if (!estilista) {
+    recordLoginFailure_("estilista");
     throw new Error("Clave incorrecta.");
   }
-  resetLoginFailures_("barber");
-  return barber;
+  resetLoginFailures_("estilista");
+  return estilista;
 }
 
-function barberData_(barber) {
+function estilistaData_(estilista) {
   const since = addDays_(today_(), -90);
   const config = getConfig_();
   return {
     version: 1,
-    barber: selfBarber_(barber),
+    estilista: selfEstilista_(estilista),
     services: getRecords_("services")
       .filter((s) => s.activo !== false)
       .sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0)),
@@ -542,34 +542,34 @@ function barberData_(barber) {
       slot_minutos: config.slot_minutos || "30",
     },
     appointments: getRecords_("appointments").filter(
-      (a) => a.barbero_id === barber.id && a.fecha >= since
+      (a) => a.estilista_id === estilista.id && a.fecha >= since
     ),
-    availabilityBlocks: getRecords_("availabilityBlocks").filter((x) => x.barbero_id === barber.id && x.fecha >= today_()),
+    availabilityBlocks: getRecords_("availabilityBlocks").filter((x) => x.estilista_id === estilista.id && x.fecha >= today_()),
     incomes: getRecords_("incomes").filter(
-      (i) => i.barbero_id === barber.id && i.fecha >= since
+      (i) => i.estilista_id === estilista.id && i.fecha >= since
     ),
   };
 }
 
-function barberLogin_(payload) {
-  const barber = requireBarber_(payload);
-  return { barber: selfBarber_(barber), data: barberData_(barber) };
+function estilistaLogin_(payload) {
+  const estilista = requireEstilista_(payload);
+  return { estilista: selfEstilista_(estilista), data: estilistaData_(estilista) };
 }
 
-function barberSave_(payload) {
-  const barber = requireBarber_(payload);
+function estilistaSave_(payload) {
+  const estilista = requireEstilista_(payload);
   const entity = str_(payload.entity);
   if (entity !== "appointments" && entity !== "incomes") {
     throw new Error("No puedes modificar esa sección.");
   }
   const input = Object.assign({}, payload.record || {});
-  input.barbero_id = barber.id;
-  input.barbero_nombre = barber.nombre;
+  input.estilista_id = estilista.id;
+  input.estilista_nombre = estilista.nombre;
 
   if (input.id) {
     const list = getRecords_(entity);
     const existing = list.filter((item) => item.id === input.id)[0];
-    if (!existing || existing.barbero_id !== barber.id) {
+    if (!existing || existing.estilista_id !== estilista.id) {
       throw new Error("Ese registro no es tuyo.");
     }
   }
@@ -577,39 +577,39 @@ function barberSave_(payload) {
   return adminSave_({ entity: entity, record: input });
 }
 
-function barberAvailabilitySave_(payload) {
-  const barber = requireBarber_(payload);
-  const record = Object.assign({}, payload.record || {}, { barbero_id: barber.id });
+function estilistaAvailabilitySave_(payload) {
+  const estilista = requireEstilista_(payload);
+  const record = Object.assign({}, payload.record || {}, { estilista_id: estilista.id });
   if (record.id) {
     const existing = getRecords_("availabilityBlocks").filter((x) => x.id === str_(record.id))[0];
-    if (!existing || existing.barbero_id !== barber.id) throw new Error("Ese bloque no es tuyo.");
+    if (!existing || existing.estilista_id !== estilista.id) throw new Error("Ese bloque no es tuyo.");
   }
   return adminSave_({ entity: "availabilityBlocks", record: record });
 }
 
-function barberAvailabilityDelete_(payload) {
-  const barber = requireBarber_(payload);
+function estilistaAvailabilityDelete_(payload) {
+  const estilista = requireEstilista_(payload);
   const item = getRecords_("availabilityBlocks").filter((x) => x.id === str_(payload.id))[0];
-  if (!item || item.barbero_id !== barber.id) throw new Error("Ese bloque no es tuyo.");
+  if (!item || item.estilista_id !== estilista.id) throw new Error("Ese bloque no es tuyo.");
   return adminDelete_({ entity: "availabilityBlocks", id: payload.id });
 }
 
-function barberDelete_(payload) {
-  const barber = requireBarber_(payload);
+function estilistaDelete_(payload) {
+  const estilista = requireEstilista_(payload);
   const entity = str_(payload.entity);
   if (entity !== "appointments" && entity !== "incomes") {
     throw new Error("No puedes modificar esa sección.");
   }
   const list = getRecords_(entity);
   const item = list.filter((x) => x.id === payload.id)[0];
-  if (!item || item.barbero_id !== barber.id) throw new Error("Ese registro no es tuyo.");
+  if (!item || item.estilista_id !== estilista.id) throw new Error("Ese registro no es tuyo.");
   return adminDelete_({ entity: entity, id: payload.id });
 }
 
-function barberSetStatus_(payload) {
-  const barber = requireBarber_(payload);
+function estilistaSetStatus_(payload) {
+  const estilista = requireEstilista_(payload);
   const appt = getRecords_("appointments").filter((a) => a.id === payload.id)[0];
-  if (!appt || appt.barbero_id !== barber.id) throw new Error("Esa cita no es tuya.");
+  if (!appt || appt.estilista_id !== estilista.id) throw new Error("Esa cita no es tuya.");
   return setStatus_(payload);
 }
 
@@ -642,11 +642,11 @@ function adminSave_(payload) {
     input.fecha = date_(input.fecha);
     input.hora = time_(input.hora);
     if (!input.servicio_id) throw new Error("Selecciona un servicio.");
-    if (!input.barbero_id) throw new Error("Selecciona una estilista.");
+    if (!input.estilista_id) throw new Error("Selecciona una estilista.");
     const svc = getRecords_("services").filter((s) => s.id === input.servicio_id)[0];
     if (!svc) throw new Error("Servicio no encontrado.");
-    const barber = getRecords_("barbers").filter((b) => b.id === input.barbero_id)[0];
-    if (!barber) throw new Error("Estilista no encontrada.");
+    const estilista = getRecords_("estilistas").filter((b) => b.id === input.estilista_id)[0];
+    if (!estilista) throw new Error("Estilista no encontrada.");
     if (!input.cliente_telefono) throw new Error("La cita necesita un teléfono.");
 
     const clients = getRecords_("clients");
@@ -657,7 +657,7 @@ function adminSave_(payload) {
       cliente_nombre: client.nombre,
       cliente_telefono: client.telefono,
       servicio_nombre: svc.nombre,
-      barbero_nombre: barber.nombre,
+      estilista_nombre: estilista.nombre,
       precio: input.precio === "" || input.precio === undefined ? Number(svc.precio) : Number(input.precio),
       duracion_min: Number(input.duracion_min) || Number(svc.duracion_min),
       estado: input.estado || "pendiente",
@@ -667,11 +667,11 @@ function adminSave_(payload) {
       fin_en: timestamp_(input.fin_en),
       duracion_real_min: Number(input.duracion_real_min) || 0,
     });
-    const scheduleChanged = !previous || previous.fecha !== input.fecha || previous.hora !== input.hora || previous.barbero_id !== input.barbero_id;
+    const scheduleChanged = !previous || previous.fecha !== input.fecha || previous.hora !== input.hora || previous.estilista_id !== input.estilista_id;
     if (scheduleChanged && ["cancelada", "no_asistio"].indexOf(input.estado) === -1) {
       const start = minutesFromTime_(input.hora);
       const end = start + input.duracion_min;
-      const blocked = getRecords_("availabilityBlocks").some((x) => x.barbero_id === input.barbero_id && x.fecha === input.fecha && x.estado !== "Disponible" && start < minutesFromTime_(x.hora_fin) && end > minutesFromTime_(x.hora_inicio));
+      const blocked = getRecords_("availabilityBlocks").some((x) => x.estilista_id === input.estilista_id && x.fecha === input.fecha && x.estado !== "Disponible" && start < minutesFromTime_(x.hora_fin) && end > minutesFromTime_(x.hora_inicio));
       if (blocked) throw new Error("La estilista no está disponible en ese horario. Elige otra hora o revisa el bloqueo de disponibilidad.");
     }
   }
@@ -682,13 +682,13 @@ function adminSave_(payload) {
     input.hora_fin = time_(input.hora_fin);
     input.estado = str_(input.estado) || "No disponible";
     if (!input.fecha || minutesFromTime_(input.hora_inicio) >= minutesFromTime_(input.hora_fin)) throw new Error("Indica una fecha y un rango horario válido.");
-    if (!getRecords_("barbers").some((b) => b.id === input.barbero_id)) throw new Error("Selecciona una estilista válida.");
+    if (!getRecords_("estilistas").some((b) => b.id === input.estilista_id)) throw new Error("Selecciona una estilista válida.");
     if (["Disponible", "Receso", "Almuerzo", "No disponible"].indexOf(input.estado) === -1) throw new Error("Estado de disponibilidad inválido.");
     if (input.estado !== "Disponible") {
       const start = minutesFromTime_(input.hora_inicio);
       const end = minutesFromTime_(input.hora_fin);
       const conflict = getRecords_("appointments").some((a) => {
-        if (a.barbero_id !== input.barbero_id || a.fecha !== input.fecha || ["cancelada", "no_asistio"].indexOf(a.estado) !== -1) return false;
+        if (a.estilista_id !== input.estilista_id || a.fecha !== input.fecha || ["cancelada", "no_asistio"].indexOf(a.estado) !== -1) return false;
         const apptStart = minutesFromTime_(a.hora);
         const apptEnd = apptStart + (Number(a.duracion_min) || 30);
         return start < apptEnd && end > apptStart;
@@ -717,7 +717,7 @@ function adminSave_(payload) {
     input.activo = bool_(input.activo, true);
   }
 
-  if (entity === "barbers") {
+  if (entity === "estilistas") {
     if (!str_(input.nombre)) throw new Error("La estilista necesita un nombre.");
     input.photo_url = str_(input.photo_url);
     input.comision_pct = Number(input.comision_pct) || 0;
@@ -726,7 +726,7 @@ function adminSave_(payload) {
     input.clave = str_(input.clave);
     if (input.clave) {
       if (input.clave.length < 10) throw new Error("La clave personal debe tener al menos 10 caracteres.");
-      const taken = getRecords_("barbers").some(
+      const taken = getRecords_("estilistas").some(
         (b) => b.id !== input.id && str_(b.clave) === input.clave
       );
       if (taken) throw new Error("Esa clave ya está en uso por otra estilista.");
@@ -838,7 +838,7 @@ function setStatus_(payload) {
         descripcion: appt.servicio_nombre + " · " + appt.cliente_nombre,
         cita_id: appt.id,
         metodo_pago: str_(payload.metodo_pago) || "Efectivo",
-        barbero_id: appt.barbero_id,
+        estilista_id: appt.estilista_id,
         creado_en: new Date().toISOString(),
       };
       writeRecord_("incomes", income);
@@ -861,7 +861,7 @@ function setStatus_(payload) {
    DISPONIBILIDAD
    ============================================================ */
 
-function computeAvailability_(dateValue, serviceId, barberId) {
+function computeAvailability_(dateValue, serviceId, estilistaId) {
   const date = date_(dateValue);
   if (!date) throw new Error("Falta la fecha.");
 
@@ -879,10 +879,10 @@ function computeAvailability_(dateValue, serviceId, barberId) {
   const today = today_();
   if (date < today) return { date: date, closed: false, slots: [] };
 
-  const barbers = getRecords_("barbers").filter((b) =>
-    b.activo !== false && (!barberId || barberId === "any" || b.id === barberId)
+  const estilistas = getRecords_("estilistas").filter((b) =>
+    b.activo !== false && (!estilistaId || estilistaId === "any" || b.id === estilistaId)
   );
-  if (!barbers.length) return { date: date, closed: false, slots: [] };
+  if (!estilistas.length) return { date: date, closed: false, slots: [] };
 
   const busyAppts = getRecords_("appointments").filter((a) =>
     a.fecha === date && ["cancelada", "no_asistio"].indexOf(a.estado) === -1
@@ -895,17 +895,17 @@ function computeAvailability_(dateValue, serviceId, barberId) {
 
   for (let t = sch.openMin; t + duration <= sch.closeMin; t += sch.slotMinutes) {
     if (t < minStart) continue;
-    const available = barbers.filter((b) => {
-      if (blocks.some((x) => x.barbero_id === b.id && t < minutesFromTime_(x.hora_fin) && t + duration > minutesFromTime_(x.hora_inicio))) return false;
+    const available = estilistas.filter((b) => {
+      if (blocks.some((x) => x.estilista_id === b.id && t < minutesFromTime_(x.hora_fin) && t + duration > minutesFromTime_(x.hora_inicio))) return false;
       return !busyAppts.some((a) => {
-        if (a.barbero_id !== b.id) return false;
+        if (a.estilista_id !== b.id) return false;
         const start = minutesFromTime_(a.hora);
         const end = start + (Number(a.duracion_min) || 30);
         return t < end && t + duration > start;
       });
     });
     if (available.length) {
-      slots.push({ time: timeFromMinutes_(t), barbers: available.map((b) => b.id) });
+      slots.push({ time: timeFromMinutes_(t), estilistas: available.map((b) => b.id) });
     }
   }
 
@@ -1246,7 +1246,7 @@ function normalize_(entity, raw) {
     };
   }
 
-  if (entity === "barbers") {
+  if (entity === "estilistas") {
     return {
       id: str_(raw.id),
       nombre: str_(raw.nombre),
@@ -1286,8 +1286,8 @@ function normalize_(entity, raw) {
       cliente_telefono: str_(raw.cliente_telefono),
       servicio_id: str_(raw.servicio_id),
       servicio_nombre: str_(raw.servicio_nombre),
-      barbero_id: str_(raw.barbero_id),
-      barbero_nombre: str_(raw.barbero_nombre),
+      estilista_id: str_(raw.estilista_id),
+      estilista_nombre: str_(raw.estilista_nombre),
       precio: num_(raw.precio, 0),
       duracion_min: num_(raw.duracion_min, 30),
       estado: str_(raw.estado) || "pendiente",
@@ -1309,7 +1309,7 @@ function normalize_(entity, raw) {
       descripcion: str_(raw.descripcion),
       cita_id: str_(raw.cita_id),
       metodo_pago: str_(raw.metodo_pago),
-      barbero_id: str_(raw.barbero_id),
+      estilista_id: str_(raw.estilista_id),
       creado_en: timestamp_(raw.creado_en),
     };
   }
@@ -1328,7 +1328,7 @@ function normalize_(entity, raw) {
 
   if (entity === "availabilityBlocks") {
     return {
-      id: str_(raw.id), barbero_id: str_(raw.barbero_id), fecha: date_(raw.fecha),
+      id: str_(raw.id), estilista_id: str_(raw.estilista_id), fecha: date_(raw.fecha),
       hora_inicio: time_(raw.hora_inicio), hora_fin: time_(raw.hora_fin),
       estado: str_(raw.estado) || "No disponible", notas: str_(raw.notas), creado_en: timestamp_(raw.creado_en),
     };
@@ -1347,8 +1347,8 @@ function publicAppointment_(appt) {
     cliente_telefono: appt.cliente_telefono,
     servicio_id: appt.servicio_id,
     servicio_nombre: appt.servicio_nombre,
-    barbero_id: appt.barbero_id,
-    barbero_nombre: appt.barbero_nombre,
+    estilista_id: appt.estilista_id,
+    estilista_nombre: appt.estilista_nombre,
     precio: Number(appt.precio) || 0,
     duracion_min: Number(appt.duracion_min) || 30,
     estado: appt.estado,

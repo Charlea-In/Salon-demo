@@ -115,8 +115,8 @@
       cliente_telefono: a.cliente_telefono,
       servicio_id: a.servicio_id,
       servicio_nombre: a.servicio_nombre,
-      barbero_id: a.barbero_id,
-      barbero_nombre: a.barbero_nombre,
+      estilista_id: a.estilista_id,
+      estilista_nombre: a.estilista_nombre,
       precio: Number(a.precio) || 0,
       duracion_min: Number(a.duracion_min) || 30,
       estado: a.estado,
@@ -126,7 +126,7 @@
   }
 
   // Lo que puede ver el sitio público de una estilista (sin clave ni comisión).
-  function publicBarber(b) {
+  function publicEstilista(b) {
     return {
       id: b.id,
       nombre: b.nombre,
@@ -138,9 +138,9 @@
   }
 
   // Lo que ve la propia estilista en su panel.
-  function selfBarber(b) {
+  function selfEstilista(b) {
     return {
-      ...publicBarber(b),
+      ...publicEstilista(b),
       comision_pct: Number(b.comision_pct) || 0,
     };
   }
@@ -186,7 +186,7 @@
     return [...list].sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
   }
 
-  function computeAvailability(db, { date, serviceId, barberId }) {
+  function computeAvailability(db, { date, serviceId, estilistaId }) {
     const sch = scheduleFrom(db.config);
     const svc = db.services.find((s) => s.id === serviceId && s.activo !== false);
     if (!svc) throw new Error("El servicio ya no está disponible.");
@@ -197,10 +197,10 @@
     if (sch.closedDays.includes(d.getDay())) return { date, closed: true, slots: [] };
     if (date < U.todayISO()) return { date, closed: false, slots: [] };
 
-    const barbers = db.barbers.filter(
-      (b) => b.activo !== false && (!barberId || barberId === "any" || b.id === barberId)
+    const estilistas = db.estilistas.filter(
+      (b) => b.activo !== false && (!estilistaId || estilistaId === "any" || b.id === estilistaId)
     );
-    if (!barbers.length) return { date, closed: false, slots: [] };
+    if (!estilistas.length) return { date, closed: false, slots: [] };
 
     const busyAppts = db.appointments.filter(
       (a) => a.fecha === date && !["cancelada", "no_asistio"].includes(a.estado)
@@ -212,14 +212,14 @@
 
     for (let t = sch.openMin; t + duration <= sch.closeMin; t += sch.slotMinutes) {
       if (t < minStart) continue;
-      const available = barbers.filter((b) => {
+      const available = estilistas.filter((b) => {
         const busy = busyAppts
-          .filter((a) => a.barbero_id === b.id)
+          .filter((a) => a.estilista_id === b.id)
           .map((a) => [U.minutesFromTime(a.hora), U.minutesFromTime(a.hora) + (Number(a.duracion_min) || 30)]);
-        const blocked = blocks.filter((x) => x.barbero_id === b.id).some((x) => t < U.minutesFromTime(x.hora_fin) && t + duration > U.minutesFromTime(x.hora_inicio));
+        const blocked = blocks.filter((x) => x.estilista_id === b.id).some((x) => t < U.minutesFromTime(x.hora_fin) && t + duration > U.minutesFromTime(x.hora_inicio));
         return !blocked && !busy.some(([start, end]) => t < end && t + duration > start);
       });
-      if (available.length) slots.push({ time: U.timeFromMinutes(t), barbers: available.map((b) => b.id) });
+      if (available.length) slots.push({ time: U.timeFromMinutes(t), estilistas: available.map((b) => b.id) });
     }
     return { date, closed: false, slots };
   }
@@ -251,7 +251,7 @@
     };
 
     const services = C.services.map((s) => ({ ...s }));
-    const barbers = C.barbers.map((b) => ({ ...b }));
+    const estilistas = C.estilistas.map((b) => ({ ...b }));
 
     const clientSeeds = [
       ["Andrea Villalobos", "00000001", "andrea.v@example.com"],
@@ -295,7 +295,7 @@
       const dayOfWeek = U.parseISO(iso).getDay();
       if (closed.includes(dayOfWeek)) continue;
 
-      barbers.forEach((barber) => {
+      estilistas.forEach((estilista) => {
         let t = openMin;
         while (t + slot <= closeMin) {
           const probability = offset < 0 ? 0.4 : offset === 0 ? 0.34 : 0.24;
@@ -308,7 +308,7 @@
               else if (offset === 0) estado = t + svc.duracion_min <= nowMin ? "completada" : rnd() < 0.55 ? "confirmada" : "pendiente";
               else estado = rnd() < 0.3 ? "confirmada" : "pendiente";
 
-              const id = `apt-${offset}-${barber.id.slice(-4)}-${t}`;
+              const id = `apt-${offset}-${estilista.id.slice(-4)}-${t}`;
               const realMin = estado === "completada" ? Math.max(5, svc.duracion_min + randInt(-4, 9)) : 0;
               const inicio = U.timeFromMinutes(t);
               const fin = U.timeFromMinutes(t + realMin);
@@ -321,8 +321,8 @@
                 cliente_telefono: client.telefono,
                 servicio_id: svc.id,
                 servicio_nombre: svc.nombre,
-                barbero_id: barber.id,
-                barbero_nombre: barber.nombre,
+                estilista_id: estilista.id,
+                estilista_nombre: estilista.nombre,
                 precio: svc.precio,
                 duracion_min: svc.duracion_min,
                 estado,
@@ -337,14 +337,14 @@
 
               if (estado === "completada") {
                 incomes.push({
-                  id: `inc-${offset}-${barber.id.slice(-4)}-${t}`,
+                  id: `inc-${offset}-${estilista.id.slice(-4)}-${t}`,
                   fecha: iso,
                   monto: svc.precio,
                   categoria: "Servicio",
                   descripcion: `${svc.nombre} · ${client.nombre}`,
                   cita_id: id,
                   metodo_pago: pick(["Efectivo", "Efectivo", "Tarjeta", "Transferencia"]),
-                  barbero_id: barber.id,
+                  estilista_id: estilista.id,
                   creado_en: `${iso}T${U.timeFromMinutes(t)}:00`,
                 });
               }
@@ -376,7 +376,7 @@
         descripcion: nombre,
         cita_id: "",
         metodo_pago: pick(["Efectivo", "Tarjeta"]),
-        barbero_id: "",
+        estilista_id: "",
         creado_en: `${fecha}T13:00:00`,
       });
     }
@@ -399,7 +399,7 @@
       version: 1,
       config,
       services,
-      barbers,
+      estilistas,
       clients,
       appointments: sortAppointments(appointments),
       incomes,
@@ -417,7 +417,7 @@
     const db = loadDB();
     const data = {
       services: db.services.filter((s) => s.activo !== false).sort((a, b) => Number(a.orden) - Number(b.orden)),
-      barbers: db.barbers.filter((b) => b.activo !== false).map(publicBarber),
+      estilistas: db.estilistas.filter((b) => b.activo !== false).map(publicEstilista),
       config: { ...db.config },
     };
     data.schedule = scheduleFrom(data.config);
@@ -445,20 +445,20 @@
     const availability = computeAvailability(db, {
       date: payload.fecha,
       serviceId: payload.servicio_id,
-      barberId: payload.barbero_id || "any",
+      estilistaId: payload.estilista_id || "any",
     });
     if (availability.closed) throw new Error("Ese día el salón está cerrado.");
     const slot = availability.slots.find((s) => s.time === payload.hora);
     if (!slot) {
       const start = U.minutesFromTime(payload.hora), end = start + (Number(svc.duracion_min) || 30);
-      const blocked = (db.availabilityBlocks || []).some((x) => x.fecha === payload.fecha && x.estado !== "Disponible" && (!payload.barbero_id || payload.barbero_id === "any" || x.barbero_id === payload.barbero_id) && start < U.minutesFromTime(x.hora_fin) && end > U.minutesFromTime(x.hora_inicio));
+      const blocked = (db.availabilityBlocks || []).some((x) => x.fecha === payload.fecha && x.estado !== "Disponible" && (!payload.estilista_id || payload.estilista_id === "any" || x.estilista_id === payload.estilista_id) && start < U.minutesFromTime(x.hora_fin) && end > U.minutesFromTime(x.hora_inicio));
       if (blocked) throw new Error("La estilista no está disponible en ese horario. Elige otra hora.");
       throw new Error("Ese horario acaba de ocuparse. Elige otro.");
     }
-    const barberId = payload.barbero_id && payload.barbero_id !== "any" ? payload.barbero_id : slot.barbers[0];
-    if (!slot.barbers.includes(barberId)) throw new Error("Esa estilista ya no tiene espacio a esa hora.");
-    const barber = db.barbers.find((b) => b.id === barberId);
-    if (!barber) throw new Error("Estilista no encontrada.");
+    const estilistaId = payload.estilista_id && payload.estilista_id !== "any" ? payload.estilista_id : slot.estilistas[0];
+    if (!slot.estilistas.includes(estilistaId)) throw new Error("Esa estilista ya no tiene espacio a esa hora.");
+    const estilista = db.estilistas.find((b) => b.id === estilistaId);
+    if (!estilista) throw new Error("Estilista no encontrada.");
 
     const phoneNorm = U.normalizePhone(telefono);
     const duplicate = db.appointments.find(
@@ -486,8 +486,8 @@
       cliente_telefono: client.telefono,
       servicio_id: svc.id,
       servicio_nombre: svc.nombre,
-      barbero_id: barber.id,
-      barbero_nombre: barber.nombre,
+      estilista_id: estilista.id,
+      estilista_nombre: estilista.nombre,
       precio: Number(svc.precio) || 0,
       duracion_min: Number(svc.duracion_min) || 30,
       estado: "pendiente",
@@ -542,22 +542,22 @@
   }
 
   /* ---------- Acceso de estilistas (demo) ---------- */
-  function barberFromKey(db, clave) {
+  function estilistaFromKey(db, clave) {
     const value = String(clave || "").trim();
     if (!value) throw new Error("Escribe tu clave personal.");
-    const barber = db.barbers.find(
+    const estilista = db.estilistas.find(
       (b) => b.activo !== false && String(b.clave || "").trim() === value
     );
-    if (!barber) throw new Error("Clave incorrecta.");
-    return barber;
+    if (!estilista) throw new Error("Clave incorrecta.");
+    return estilista;
   }
 
-  function scopedBarberData(db, barber) {
+  function scopedEstilistaData(db, estilista) {
     const since = U.addDays(U.todayISO(), -90);
     const config = db.config || {};
     return {
       version: 1,
-      barber: selfBarber(barber),
+      estilista: selfEstilista(estilista),
       services: db.services
         .filter((s) => s.activo !== false)
         .sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0)),
@@ -570,62 +570,62 @@
         slot_minutos: config.slot_minutos || String(C.schedule.slotMinutes),
       },
       appointments: db.appointments.filter(
-        (a) => a.barbero_id === barber.id && a.fecha >= since
+        (a) => a.estilista_id === estilista.id && a.fecha >= since
       ),
       incomes: db.incomes.filter(
-        (i) => i.barbero_id === barber.id && i.fecha >= since
+        (i) => i.estilista_id === estilista.id && i.fecha >= since
       ),
-      availabilityBlocks: (db.availabilityBlocks || []).filter((x) => x.barbero_id === barber.id && x.fecha >= U.todayISO()),
+      availabilityBlocks: (db.availabilityBlocks || []).filter((x) => x.estilista_id === estilista.id && x.fecha >= U.todayISO()),
     };
   }
 
-  function demoBarberLogin(payload) {
+  function demoEstilistaLogin(payload) {
     const db = loadDB();
-    const barber = barberFromKey(db, payload.clave);
-    return { barber: selfBarber(barber), data: scopedBarberData(db, barber) };
+    const estilista = estilistaFromKey(db, payload.clave);
+    return { estilista: selfEstilista(estilista), data: scopedEstilistaData(db, estilista) };
   }
 
-  function demoBarberData(payload) {
+  function demoEstilistaData(payload) {
     const db = loadDB();
-    const barber = barberFromKey(db, payload.clave);
-    return scopedBarberData(db, barber);
+    const estilista = estilistaFromKey(db, payload.clave);
+    return scopedEstilistaData(db, estilista);
   }
 
-  function demoBarberSave(payload) {
+  function demoEstilistaSave(payload) {
     const db = loadDB();
-    const barber = barberFromKey(db, payload.clave);
+    const estilista = estilistaFromKey(db, payload.clave);
     const entity = String(payload.entity || "");
     if (entity !== "appointments" && entity !== "incomes" && entity !== "availabilityBlocks") {
       throw new Error("No puedes modificar esa sección.");
     }
-    const record = { ...(payload.record || {}), barbero_id: barber.id, barbero_nombre: barber.nombre };
+    const record = { ...(payload.record || {}), estilista_id: estilista.id, estilista_nombre: estilista.nombre };
 
     if (record.id) {
       const list = entity === "appointments" ? db.appointments : entity === "incomes" ? db.incomes : db.availabilityBlocks;
       const existing = list.find((item) => item.id === record.id);
-      if (!existing || existing.barbero_id !== barber.id) throw new Error("Ese registro no es tuyo.");
+      if (!existing || existing.estilista_id !== estilista.id) throw new Error("Ese registro no es tuyo.");
     }
     return demoAdminSave({ entity, record });
   }
 
-  function demoBarberDelete(payload) {
+  function demoEstilistaDelete(payload) {
     const db = loadDB();
-    const barber = barberFromKey(db, payload.clave);
+    const estilista = estilistaFromKey(db, payload.clave);
     const entity = String(payload.entity || "");
     if (entity !== "appointments" && entity !== "incomes" && entity !== "availabilityBlocks") {
       throw new Error("No puedes modificar esa sección.");
     }
     const list = entity === "appointments" ? db.appointments : entity === "incomes" ? db.incomes : db.availabilityBlocks;
     const item = list.find((x) => x.id === payload.id);
-    if (!item || item.barbero_id !== barber.id) throw new Error("Ese registro no es tuyo.");
+    if (!item || item.estilista_id !== estilista.id) throw new Error("Ese registro no es tuyo.");
     return demoAdminDelete({ entity, id: payload.id });
   }
 
-  function demoBarberSetStatus(payload) {
+  function demoEstilistaSetStatus(payload) {
     const db = loadDB();
-    const barber = barberFromKey(db, payload.clave);
+    const estilista = estilistaFromKey(db, payload.clave);
     const appt = db.appointments.find((a) => a.id === payload.id);
-    if (!appt || appt.barbero_id !== barber.id) throw new Error("Esa cita no es tuya.");
+    if (!appt || appt.estilista_id !== estilista.id) throw new Error("Esa cita no es tuya.");
     return demoSetStatus(payload);
   }
 
@@ -645,7 +645,7 @@
 
     const lists = {
       services: db.services,
-      barbers: db.barbers,
+      estilistas: db.estilistas,
       clients: db.clients,
       appointments: db.appointments,
       incomes: db.incomes,
@@ -668,11 +668,11 @@
     if (entity === "appointments") {
       if (!input.fecha || !input.hora) throw new Error("La cita necesita fecha y hora.");
       if (!input.servicio_id) throw new Error("Selecciona un servicio.");
-      if (!input.barbero_id) throw new Error("Selecciona una estilista.");
+      if (!input.estilista_id) throw new Error("Selecciona una estilista.");
       const svc = db.services.find((s) => s.id === input.servicio_id);
       if (!svc) throw new Error("Servicio no encontrado.");
-      const barber = db.barbers.find((b) => b.id === input.barbero_id);
-      if (!barber) throw new Error("Estilista no encontrada.");
+      const estilista = db.estilistas.find((b) => b.id === input.estilista_id);
+      if (!estilista) throw new Error("Estilista no encontrada.");
       if (!input.cliente_telefono) throw new Error("La cita necesita un teléfono.");
       const client = ensureClient(db, input);
       Object.assign(input, {
@@ -680,7 +680,7 @@
         cliente_nombre: client.nombre,
         cliente_telefono: client.telefono,
         servicio_nombre: svc.nombre,
-        barbero_nombre: barber.nombre,
+        estilista_nombre: estilista.nombre,
         precio: input.precio === "" || input.precio === undefined ? Number(svc.precio) : Number(input.precio),
         duracion_min: Number(input.duracion_min) || Number(svc.duracion_min),
         estado: input.estado || "pendiente",
@@ -688,10 +688,10 @@
         creado_en: input.creado_en || new Date().toISOString(),
         duracion_real_min: Number(input.duracion_real_min) || 0,
       });
-      const scheduleChanged = !previous || previous.fecha !== input.fecha || previous.hora !== input.hora || previous.barbero_id !== input.barbero_id;
+      const scheduleChanged = !previous || previous.fecha !== input.fecha || previous.hora !== input.hora || previous.estilista_id !== input.estilista_id;
       if (scheduleChanged && !["cancelada", "no_asistio"].includes(input.estado)) {
         const start = U.minutesFromTime(input.hora), end = start + input.duracion_min;
-        const blocked = (db.availabilityBlocks || []).some((x) => x.barbero_id === input.barbero_id && x.fecha === input.fecha && x.estado !== "Disponible" && start < U.minutesFromTime(x.hora_fin) && end > U.minutesFromTime(x.hora_inicio));
+        const blocked = (db.availabilityBlocks || []).some((x) => x.estilista_id === input.estilista_id && x.fecha === input.fecha && x.estado !== "Disponible" && start < U.minutesFromTime(x.hora_fin) && end > U.minutesFromTime(x.hora_inicio));
         if (blocked) throw new Error("La estilista no está disponible en ese horario. Elige otra hora o revisa el bloqueo de disponibilidad.");
       }
     }
@@ -702,11 +702,11 @@
       input.hora_fin = String(input.hora_fin || "");
       input.estado = String(input.estado || "No disponible");
       if (!input.fecha || U.minutesFromTime(input.hora_inicio) >= U.minutesFromTime(input.hora_fin)) throw new Error("Indica una fecha y un rango horario válido.");
-      if (!db.barbers.some((b) => b.id === input.barbero_id)) throw new Error("Selecciona una estilista válida.");
+      if (!db.estilistas.some((b) => b.id === input.estilista_id)) throw new Error("Selecciona una estilista válida.");
       if (!["Disponible", "Receso", "Almuerzo", "No disponible"].includes(input.estado)) throw new Error("Estado de disponibilidad inválido.");
       if (input.estado !== "Disponible") {
         const start = U.minutesFromTime(input.hora_inicio), end = U.minutesFromTime(input.hora_fin);
-        const conflict = db.appointments.some((a) => a.barbero_id === input.barbero_id && a.fecha === input.fecha && !["cancelada", "no_asistio"].includes(a.estado) && start < U.minutesFromTime(a.hora) + (Number(a.duracion_min) || 30) && end > U.minutesFromTime(a.hora));
+        const conflict = db.appointments.some((a) => a.estilista_id === input.estilista_id && a.fecha === input.fecha && !["cancelada", "no_asistio"].includes(a.estado) && start < U.minutesFromTime(a.hora) + (Number(a.duracion_min) || 30) && end > U.minutesFromTime(a.hora));
         if (conflict) throw new Error("No se puede bloquear ese horario: ya hay una cita asignada. Mueve o cancela la cita antes de crear el bloqueo.");
       }
     }
@@ -728,7 +728,7 @@
       input.activo = input.activo !== false;
     }
 
-    if (entity === "barbers") {
+    if (entity === "estilistas") {
       if (!String(input.nombre || "").trim()) throw new Error("La estilista necesita un nombre.");
       input.comision_pct = Number(input.comision_pct) || 0;
       input.activo = input.activo !== false;
@@ -736,7 +736,7 @@
       input.clave = String(input.clave || "").trim();
       if (input.clave) {
         if (input.clave.length < 6) throw new Error("La clave personal debe tener al menos 6 caracteres.");
-        const taken = db.barbers.some(
+        const taken = db.estilistas.some(
           (b) => b.id !== input.id && String(b.clave || "").trim() === input.clave
         );
         if (taken) throw new Error("Esa clave ya está en uso por otra estilista.");
@@ -751,7 +751,7 @@
       input.metodo_pago = input.metodo_pago || "Efectivo";
     }
 
-    const prefixes = { services: "srv", barbers: "brb", clients: "cl", appointments: "apt", incomes: "inc", expenses: "exp", availabilityBlocks: "avl" };
+    const prefixes = { services: "srv", estilistas: "brb", clients: "cl", appointments: "apt", incomes: "inc", expenses: "exp", availabilityBlocks: "avl" };
     let record;
     if (input.id) {
       const index = list.findIndex((item) => item.id === input.id);
@@ -829,7 +829,7 @@
           descripcion: `${appt.servicio_nombre} · ${appt.cliente_nombre}`,
           cita_id: appt.id,
           metodo_pago: payload.metodo_pago || "Efectivo",
-          barbero_id: appt.barbero_id,
+          estilista_id: appt.estilista_id,
           creado_en: new Date().toISOString(),
         };
         db.incomes.push(income);
@@ -956,40 +956,40 @@
     },
 
     /* ---------- Panel de la estilista ---------- */
-    async barberLogin(clave) {
-      if (DEMO) return demoBarberLogin({ clave });
-      return request("barberLogin", { clave });
+    async estilistaLogin(clave) {
+      if (DEMO) return demoEstilistaLogin({ clave });
+      return request("estilistaLogin", { clave });
     },
 
-    async barberData(clave) {
-      if (DEMO) return demoBarberData({ clave });
-      return request("barberData", { clave });
+    async estilistaData(clave) {
+      if (DEMO) return demoEstilistaData({ clave });
+      return request("estilistaData", { clave });
     },
 
-    async barberSave(clave, entity, record) {
-      if (DEMO) return demoBarberSave({ clave, entity, record });
-      return request("barberSave", { clave, entity, record });
+    async estilistaSave(clave, entity, record) {
+      if (DEMO) return demoEstilistaSave({ clave, entity, record });
+      return request("estilistaSave", { clave, entity, record });
     },
 
-    async barberAvailabilitySave(clave, record) {
-      if (DEMO) return demoBarberSave({ clave, entity: "availabilityBlocks", record });
-      return request("barberAvailabilitySave", { clave, record });
+    async estilistaAvailabilitySave(clave, record) {
+      if (DEMO) return demoEstilistaSave({ clave, entity: "availabilityBlocks", record });
+      return request("estilistaAvailabilitySave", { clave, record });
     },
 
-    async barberAvailabilityDelete(clave, id) {
-      if (DEMO) return demoBarberDelete({ clave, entity: "availabilityBlocks", id });
-      return request("barberAvailabilityDelete", { clave, id });
+    async estilistaAvailabilityDelete(clave, id) {
+      if (DEMO) return demoEstilistaDelete({ clave, entity: "availabilityBlocks", id });
+      return request("estilistaAvailabilityDelete", { clave, id });
     },
 
-    async barberDelete(clave, entity, id) {
-      if (DEMO) return demoBarberDelete({ clave, entity, id });
-      return request("barberDelete", { clave, entity, id });
+    async estilistaDelete(clave, entity, id) {
+      if (DEMO) return demoEstilistaDelete({ clave, entity, id });
+      return request("estilistaDelete", { clave, entity, id });
     },
 
-    async barberSetStatus(clave, id, estado, metodo_pago, extra = {}) {
+    async estilistaSetStatus(clave, id, estado, metodo_pago, extra = {}) {
       const payload = { clave, id, estado, metodo_pago, ...extra };
-      if (DEMO) return demoBarberSetStatus(payload);
-      return request("barberSetStatus", payload);
+      if (DEMO) return demoEstilistaSetStatus(payload);
+      return request("estilistaSetStatus", payload);
     },
 
     resetDemo() {

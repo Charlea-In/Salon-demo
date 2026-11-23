@@ -228,7 +228,7 @@
       `DTEND:${fmt(end)}`,
       `SUMMARY:${appt.servicio_nombre || "Cita"} · ${C.brand.name}`,
       `LOCATION:${C.contact.address}`,
-      `DESCRIPTION:${appt.barbero_nombre ? "Estilista: " + appt.barbero_nombre + ". " : ""}Código: ${appt.codigo || appt.id || ""}`,
+      `DESCRIPTION:${appt.estilista_nombre ? "Estilista: " + appt.estilista_nombre + ". " : ""}Código: ${appt.codigo || appt.id || ""}`,
       "END:VEVENT",
       "END:VCALENDAR",
     ];

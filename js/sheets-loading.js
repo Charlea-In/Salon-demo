@@ -13,14 +13,14 @@
       renderer: "svg",
       loop: true,
       autoplay: true,
-      path: "assets/loading-barbero.json",
+      path: "assets/loading-estilista.json",
     });
   }
 
   function labelFor({ action, payload = {} }) {
-    if (action === "adminLogin" || action === "barberLogin") return "Validando acceso…";
-    if (action === "adminData" || action === "barberData" || action === "bootstrap") return "Cargando datos…";
-    if (action === "setStatus" || action === "barberSetStatus") {
+    if (action === "adminLogin" || action === "estilistaLogin") return "Validando acceso…";
+    if (action === "adminData" || action === "estilistaData" || action === "bootstrap") return "Cargando datos…";
+    if (action === "setStatus" || action === "estilistaSetStatus") {
       return payload.estado === "confirmada" ? "Confirmando cita…" : "Actualizando cita…";
     }
     if (action.toLowerCase().includes("delete")) return "Eliminando registro…";

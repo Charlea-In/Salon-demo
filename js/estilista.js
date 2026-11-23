@@ -9,7 +9,7 @@
   const $$ = (sel, root = document) => U.$$(sel, root);
 
   const state = {
-    key: sessionStorage.getItem("barbero_key") || "",
+    key: sessionStorage.getItem("estilista_key") || "",
     data: null,
     view: "hoy", // hoy | ingresos
     timer: null,
@@ -22,9 +22,9 @@
   async function init() {
     wire();
     if (S.mode === "demo") {
-      $("#barbero-hint").innerHTML = `Demo funcional · usa una clave como <b>daniela2026</b>, <b>valeria2026</b>, <b>camila2026</b> o <b>sofia2026</b>.`;
+      $("#estilista-hint").innerHTML = `Demo funcional · usa una clave como <b>daniela2026</b>, <b>valeria2026</b>, <b>camila2026</b> o <b>sofia2026</b>.`;
     } else {
-      $("#barbero-hint").innerHTML = "Modo Google Sheets · usa tu clave personal asignada por la dueña.";
+      $("#estilista-hint").innerHTML = "Modo Google Sheets · usa tu clave personal asignada por la dueña.";
     }
 
     if (state.key) {
@@ -33,9 +33,9 @@
   }
 
   function wire() {
-    $("#barbero-login-form").addEventListener("submit", async (e) => {
+    $("#estilista-login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const key = $("#barbero-key").value.trim();
+      const key = $("#estilista-key").value.trim();
       if (!key) return;
       const btn = e.target.querySelector('button[type="submit"]');
       btn.disabled = true;
@@ -45,14 +45,14 @@
       btn.textContent = "Entrar a mi jornada";
     });
 
-    $("#barbero-logout").addEventListener("click", logout);
-    $("#barbero-refresh").addEventListener("click", () => loadData(true));
+    $("#estilista-logout").addEventListener("click", logout);
+    $("#estilista-refresh").addEventListener("click", () => loadData(true));
     window.addEventListener("storage", () => {
       if (state.key && !document.hidden) loadData(false);
     });
 
     // Delegación de eventos para el panel
-    $("#barbero-view").addEventListener("click", (e) => {
+    $("#estilista-view").addEventListener("click", (e) => {
       const btn = e.target.closest("[data-action], [data-cal-time], [data-cal-delete]");
       if (!btn) return;
       const action = btn.dataset.action;
@@ -64,26 +64,26 @@
       if (action === "confirm") changeStatus(id, "confirmada");
       if (action === "cancel") changeStatus(id, "cancelada");
     });
-    $("#barbero-view").addEventListener("change", (e) => { if (e.target.matches("[data-cal-date]")) { state.calendarDate = e.target.value || U.todayISO(); render(); } });
-    $("#barbero-view").addEventListener("submit", async (e) => {
+    $("#estilista-view").addEventListener("change", (e) => { if (e.target.matches("[data-cal-date]")) { state.calendarDate = e.target.value || U.todayISO(); render(); } });
+    $("#estilista-view").addEventListener("submit", async (e) => {
       if (e.target.id !== "availability-form") return;
       e.preventDefault(); const form = e.target; const values = Object.fromEntries(new FormData(form).entries());
-      try { await S.barberAvailabilitySave(state.key, values); await loadData(); U.toast("Bloque de disponibilidad guardado.", "success"); }
+      try { await S.estilistaAvailabilitySave(state.key, values); await loadData(); U.toast("Bloque de disponibilidad guardado.", "success"); }
       catch (err) { U.toast(err.message || "No se pudo guardar el bloque.", "error"); }
     });
   }
 
   async function login(key, silent = false) {
     try {
-      const res = await S.barberLogin(key);
-      sessionStorage.setItem("barbero_key", key);
+      const res = await S.estilistaLogin(key);
+      sessionStorage.setItem("estilista_key", key);
       state.key = key;
       state.data = res.data;
-      $("#barbero-name").textContent = res.barber.nombre;
-      $("#barbero-role").textContent = res.barber.rol || "Estilista";
+      $("#estilista-name").textContent = res.estilista.nombre;
+      $("#estilista-role").textContent = res.estilista.rol || "Estilista";
       
-      $("#barbero-login").style.display = "none";
-      $("#barbero-shell").hidden = false;
+      $("#estilista-login").style.display = "none";
+      $("#estilista-shell").hidden = false;
       
       render();
       startTicker();
@@ -96,21 +96,21 @@
   }
 
   function logout() {
-    sessionStorage.removeItem("barbero_key");
+    sessionStorage.removeItem("estilista_key");
     state.key = "";
     state.data = null;
     clearInterval(state.timer);
     clearInterval(state.refresh);
-    $("#barbero-login").style.display = "grid";
-    $("#barbero-shell").hidden = true;
-    $("#barbero-key").value = "";
+    $("#estilista-login").style.display = "grid";
+    $("#estilista-shell").hidden = true;
+    $("#estilista-key").value = "";
   }
 
   async function loadData(showToast = false) {
     if (!state.key) return;
     updateSyncLabel("Actualizando…");
     try {
-      state.data = await S.barberData(state.key);
+      state.data = await S.estilistaData(state.key);
       render();
       updateSyncLabel("Actualizado");
       if (showToast) U.toast("Datos actualizados", "success");
@@ -121,7 +121,7 @@
   }
 
   function updateSyncLabel(text) {
-    const el = $("#barbero-sync");
+    const el = $("#estilista-sync");
     if (el) el.textContent = text;
   }
 
@@ -156,7 +156,7 @@
 
   /* ---------- Vistas ---------- */
   function render() {
-    const { barber, appointments } = state.data;
+    const { estilista, appointments } = state.data;
     const today = U.todayISO();
     
     // Filtrar citas de hoy (ignorando canceladas/no asistió)
@@ -168,7 +168,7 @@
     const liveAppt = appointments.find(a => a.fecha === today && a.estado === "en_curso");
 
     // Actualizar chip "En vivo" en topbar
-    const chip = $("#barbero-live-chip");
+    const chip = $("#estilista-live-chip");
     if (liveAppt) chip.hidden = false;
     else chip.hidden = true;
 
@@ -187,9 +187,9 @@
     // Renderizar dinero del día y comisiones (simulado con los ingresos de hoy)
     const todayIncomes = state.data.incomes.filter(i => i.fecha === today);
     const totalIncome = U.sum(todayIncomes, "monto");
-    const commission = (totalIncome * (barber.comision_pct || 0)) / 100;
+    const commission = (totalIncome * (estilista.comision_pct || 0)) / 100;
 
-    $("#barbero-view").innerHTML = `
+    $("#estilista-view").innerHTML = `
       <div class="view-head">
         <div>
           <h1 class="view-head__title">Mi jornada</h1>
@@ -201,7 +201,7 @@
             <div class="kpi__value" style="font-size:22px">${U.money(totalIncome)}</div>
           </div>
           <div class="kpi" style="padding:8px 14px; min-width:130px">
-            <div class="kpi__label">Mi comisión (${barber.comision_pct}%)</div>
+            <div class="kpi__label">Mi comisión (${estilista.comision_pct}%)</div>
             <div class="kpi__value" style="font-size:22px;color:#8a6a1f">${U.money(commission)}</div>
           </div>
         </div>
@@ -230,9 +230,9 @@
           </div>
         </div>
       </div>
-      <div class="card daycal-card barber-calendar">
+      <div class="card daycal-card estilista-calendar">
         <div class="card__head"><div><div class="card__title">Calendario de mi jornada</div><div class="sub">Crea bloques de receso, almuerzo o disponibilidad</div></div><input class="input" type="date" data-cal-date value="${U.esc(state.calendarDate || today)}" aria-label="Fecha del calendario"></div>
-        <div class="card__body">${DayCalendar.render({ date: state.calendarDate || today, appointments, blocks: state.data.availabilityBlocks || [], barberId: barber.id, editable: true, config: state.data.config })}</div>
+        <div class="card__body">${DayCalendar.render({ date: state.calendarDate || today, appointments, blocks: state.data.availabilityBlocks || [], estilistaId: estilista.id, editable: true, config: state.data.config })}</div>
         <form class="availability-form" id="availability-form">
           <input type="hidden" name="fecha" value="${U.esc(state.calendarDate || today)}">
           <label>Desde<input class="input" id="availability-start" name="hora_inicio" type="time" value="12:00" required></label>
@@ -248,7 +248,7 @@
   }
 
   async function removeAvailability(id) {
-    try { await S.barberAvailabilityDelete(state.key, id); await loadData(); U.toast("Bloque eliminado.", "success"); }
+    try { await S.estilistaAvailabilityDelete(state.key, id); await loadData(); U.toast("Bloque eliminado.", "success"); }
     catch (error) { U.toast(error.message || "No se pudo eliminar.", "error"); }
   }
 
@@ -376,7 +376,7 @@
   async function startJob(id) {
     try {
       // Cambiamos a en_curso y guardamos el timestamp de inicio
-      await S.barberSetStatus(state.key, id, "en_curso", null, { inicio_en: new Date().toISOString() });
+      await S.estilistaSetStatus(state.key, id, "en_curso", null, { inicio_en: new Date().toISOString() });
       await loadData();
       U.toast("Servicio iniciado. ¡Buen trabajo!", "success");
     } catch (e) {
@@ -394,7 +394,7 @@
     if (!ok) return;
 
     try {
-      await S.barberSetStatus(state.key, id, "completada", "Efectivo");
+      await S.estilistaSetStatus(state.key, id, "completada", "Efectivo");
       await loadData();
       U.toast("Servicio terminado y registrado.", "success");
     } catch (e) {
@@ -404,7 +404,7 @@
 
   async function changeStatus(id, estado) {
     try {
-      await S.barberSetStatus(state.key, id, estado);
+      await S.estilistaSetStatus(state.key, id, estado);
       await loadData();
       U.toast("Estado actualizado.", "success");
     } catch (e) {
