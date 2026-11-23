@@ -40,7 +40,7 @@ window.SALON_CONFIG = {
   api: {
     // Pega aquí la URL del Web App de Apps Script (termina en /exec).
     // Si lo dejas vacío, la página funciona como demo funcional con datos locales.
-    url: "https://script.google.com/macros/s/AKfycbzGRo3ZsQxYz6JE5UN8bU1-uNyIfBB3aRLhoNoEvzAGo_NgByOyaTt5Drod1oe7samL/exec",
+    url: "https://script.google.com/macros/s/AKfycbw1FmzhziUMLL3f-g8FdvytYj9GYPRQbSxmfAHsLZqQOFzWexnikpw7HZTT6AzgXV9x4Q/exec",
   },
 
   admin: {
