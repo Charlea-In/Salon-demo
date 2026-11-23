@@ -9,7 +9,10 @@
 3. Pega `Code.gs` en el editor.
 4. (Opcional, recomendado) Copia `appsscript.json` en **Configuración del proyecto → Mostrar archivo de manifiesto**.
 5. Ejecuta `setup()` y autoriza los permisos.
-6. Ejecuta `configurarClave("aurea-2026-fuerte")` (o una clave propia de 10+ caracteres).
+6. Ejecuta `configurarClave("aurea-2026-fuerte")` (o una clave propia de 6+ caracteres).
+   - En el editor de Apps Script, selecciona la función `configurarClave` en el desplegable.
+   - Escribe la clave entre comillas en el campo de parámetros que aparece al lado (ej. `"aurea-2026-fuerte"`) y haz clic en **Ejecutar**.
+   - **Alternativa:** agrega al final de `Code.gs` la línea `configurarClave("aurea-2026-fuerte");`, guarda y ejecuta cualquier función. Luego borra esa línea y vuelve a guardar.
 7. **Implementar → Nueva implementación → Aplicación web**:
    - Ejecutar como: **Yo**
    - Acceso: **Cualquier persona**
