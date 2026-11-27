@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261121c">
+  <link rel="stylesheet" href="css/styles.css?v=20261127a">
 </head>
 <body>
   <a class="sr-only" href="#inicio">Saltar al contenido</a>
@@ -53,20 +53,20 @@
             Color, cuidado y belleza en un lugar donde puedes bajar el ritmo, sentirte escuchada y salir siendo más tú.
           </p>
           <div class="hero__actions" data-reveal>
-            <button class="btn btn--primary" type="button" data-open-booking>Encuentra tu momento <span class="btn__arrow" aria-hidden="true">↗</span></button>
+            <button class="btn btn--primary" type="button" data-open-booking>Encuentra tu momento <svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7"/></svg></button>
             <a class="btn btn--outline" href="#servicios">Explorar servicios</a>
           </div>
           <div class="hero__meta" data-reveal>
             <div class="hero__stat"><strong id="stat-stylists">4</strong><span>Especialistas</span></div>
             <div class="hero__stat"><strong id="stat-years">8</strong><span>Años cuidando de ti</span></div>
-            <span class="hero__signature">Belleza a tu manera <span aria-hidden="true">✳</span></span>
+            <span class="hero__signature">Belleza a tu manera</span>
           </div>
         </div>
 
         <div class="hero__visual" data-reveal>
           <img class="hero__art" src="assets/aurea-hero.avif" alt="Ilustración cálida de una mujer con el cabello recogido y flores" fetchpriority="high">
           <span class="hero__visual-note hero__visual-note--top">Un ratito para ti</span>
-          <span class="hero__visual-note hero__visual-note--bottom">Belleza sin prisa <span aria-hidden="true">✳</span></span>
+          <span class="hero__visual-note hero__visual-note--bottom">Belleza sin prisa</span>
           <aside class="hero-card" aria-label="Disponibilidad del salón">
             <div class="hero-card__top">
               <span class="hero-card__label">Hoy en el salón</span>
@@ -75,7 +75,7 @@
             <div class="hero-card__hours" id="hero-hours">09:00 <small>— 19:00</small></div>
             <div class="hero-card__next"><span>Próximo espacio</span><strong id="hero-next">—</strong></div>
             <div class="hero-card__list" id="hero-services"></div>
-            <button class="btn btn--primary btn--block" type="button" data-open-booking>Ver horarios <span class="btn__arrow" aria-hidden="true">↗</span></button>
+            <button class="btn btn--primary btn--block" type="button" data-open-booking>Ver horarios <svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7"/></svg></button>
           </aside>
         </div>
       </div>
@@ -89,12 +89,13 @@
     <!-- SERVICIOS -->
     <section class="section intro-section" id="bienvenida">
       <div class="container intro-grid">
-        <div class="intro-mark" aria-hidden="true">AU<span>✳</span></div>
+        <!-- Cambia assets/logo-intro.svg por el logo deseado para actualizar este espacio. -->
+        <div class="intro-mark"><img class="intro-mark__logo" src="assets/logo-intro.svg" alt="Logo de Aurea Salón"></div>
         <div class="intro-copy">
           <span class="eyebrow">Un salón hecho para sentirte bien</span>
           <h2>Tu estilo, tus tiempos,<br><em>tu momento.</em></h2>
           <p>Nos gusta escuchar primero. Así cada cita se siente personal, desde elegir tu servicio hasta el último detalle frente al espejo.</p>
-          <a class="link-arrow" href="#estilistas">Conoce a nuestro equipo <span aria-hidden="true">↗</span></a>
+          <a class="link-arrow" href="#estilistas">Conoce a nuestro equipo</a>
         </div>
         <div class="intro-points">
           <div><span>01</span><p>Reserva en línea<br>sin llamadas</p></div>
@@ -113,7 +114,11 @@
           </div>
           <p>Desde un cambio sutil hasta un momento completo de cuidado. Explora los servicios disponibles y encuentra el tuyo.</p>
         </div>
-        <div class="services-grid" id="services-grid" data-reveal></div>
+        <div class="services-carousel" data-services-carousel>
+          <button class="services-carousel__control services-carousel__control--prev" type="button" aria-label="Servicios anteriores"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+          <div class="services-grid" id="services-grid" data-reveal aria-label="Servicios del salón"></div>
+          <button class="services-carousel__control services-carousel__control--next" type="button" aria-label="Siguientes servicios"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+        </div>
       </div>
     </section>
 
@@ -184,9 +189,9 @@
 
     <section class="editorial-banner">
       <div class="container editorial-banner__inner">
-        <span class="editorial-banner__flower" aria-hidden="true">✳</span>
+        <svg class="editorial-banner__flower" viewBox="0 0 160 160" aria-hidden="true"><path d="M80 8v144M8 80h144M29 29l102 102M131 29 29 131"/></svg>
         <p>Un buen día de belleza<br><em>también empieza por ti.</em></p>
-        <button class="btn btn--dark" type="button" data-open-booking>Reserva tu cita <span aria-hidden="true">↗</span></button>
+        <button class="btn btn--dark" type="button" data-open-booking>Reserva tu cita <svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7"/></svg></button>
       </div>
     </section>
 
@@ -231,7 +236,7 @@
             <div class="hours" id="hours-list"></div>
             <div class="contact-actions">
               <a class="btn btn--primary" id="whatsapp-link" href="#" target="_blank" rel="noopener" hidden>
-                WhatsApp <span class="btn__arrow" aria-hidden="true">→</span>
+                WhatsApp <svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11m-5-5 5 5-5 5"/></svg>
               </a>
               <a class="btn btn--outline" id="phone-link" data-config-link="phone" href="#" hidden>Llamar</a>
             </div>
@@ -263,7 +268,7 @@
   </main>
 
   <div class="mobile-booking-bar">
-    <button class="btn btn--primary" type="button" data-open-booking>Reserva tu cita <span aria-hidden="true">↗</span></button>
+    <button class="btn btn--primary" type="button" data-open-booking>Reserva tu cita <svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5 4h7v7"/></svg></button>
   </div>
 
   <footer class="site-footer">
@@ -294,7 +299,6 @@
       </div>
       <div class="footer-bottom">
       <span>© <span id="year">2026</span> <span data-config="nombre_negocio">Aurea Salón</span>. Todos los derechos reservados.</span>
-      <span>Reservas en línea · Atención cercana</span>
       </div>
     </div>
   </footer>
@@ -322,9 +326,9 @@
           <div class="booking__body" id="booking-body"></div>
 
           <div class="booking__nav" id="booking-nav">
-            <button class="btn btn--ghost btn--sm" type="button" id="booking-back">← Atrás</button>
+            <button class="btn btn--ghost btn--sm" type="button" id="booking-back"><svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="m10 3-5 5 5 5"/></svg> Atrás</button>
             <span class="booking__nav-total" id="booking-total" aria-live="polite"></span>
-            <button class="btn btn--primary btn--sm" type="button" id="booking-next" disabled>Continuar →</button>
+            <button class="btn btn--primary btn--sm" type="button" id="booking-next" disabled><span class="booking-next__label">Continuar</span><svg class="btn__arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11m-5-5 5 5-5 5"/></svg></button>
           </div>
         </div>
 

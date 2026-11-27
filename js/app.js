@@ -89,7 +89,8 @@
 
   function renderServices() {
     const list = [...state.services].sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0));
-    $("#services-grid").innerHTML = list
+    const rail = $("#services-grid");
+    rail.innerHTML = list
       .map(
         (s, i) => `
         <article class="service-card">
@@ -98,13 +99,85 @@
           <p>${U.esc(s.descripcion || "")}</p>
           <div class="service-card__foot">
             <div class="service-card__price">${U.money(s.precio)}<small>${Number(s.duracion_min)} min</small></div>
-            <span class="service-card__time">Reservar →</span>
+            <span class="service-card__time">Reservar</span>
           </div>
           <button class="service-card__cta" type="button" data-book-service="${U.esc(s.id)}"
             aria-label="Reservar ${U.esc(s.nombre)}"></button>
         </article>`
       )
       .join("");
+    setupServicesCarousel(rail);
+  }
+
+  let servicesTimer = null;
+  let servicesResumeTimer = null;
+  let servicesCarouselController = null;
+  function setupServicesCarousel(rail) {
+    if (servicesCarouselController) servicesCarouselController.abort();
+    servicesCarouselController = new AbortController();
+    const { signal } = servicesCarouselController;
+    if (servicesTimer) clearInterval(servicesTimer);
+    if (servicesResumeTimer) clearTimeout(servicesResumeTimer);
+    rail.querySelectorAll("[data-carousel-clone]").forEach((clone) => clone.remove());
+    const originals = [...rail.querySelectorAll(".service-card")];
+    if (originals.length < 2) return;
+    const visibleCount = () => matchMedia("(max-width: 370px)").matches ? 1 : matchMedia("(max-width: 720px)").matches ? 2 : 3;
+    const count = Math.min(visibleCount(), originals.length);
+    const leading = originals.slice(-count).map((card) => card.cloneNode(true));
+    const trailing = originals.slice(0, count).map((card) => card.cloneNode(true));
+    [...leading, ...trailing].forEach((clone) => {
+      clone.dataset.carouselClone = "true";
+      clone.setAttribute("aria-hidden", "true");
+      clone.querySelectorAll("button, a, [tabindex]").forEach((el) => el.setAttribute("tabindex", "-1"));
+    });
+    leading.forEach((clone) => rail.insertBefore(clone, rail.firstChild));
+    trailing.forEach((clone) => rail.appendChild(clone));
+    rail.setAttribute("role", "region");
+    rail.setAttribute("aria-roledescription", "carrusel");
+    const step = () => {
+      const card = rail.querySelector(".service-card");
+      return card ? card.getBoundingClientRect().width + (parseFloat(getComputedStyle(rail).gap) || 0) : 0;
+    };
+    const jumpTo = (position) => {
+      rail.style.scrollBehavior = "auto";
+      rail.scrollLeft = position;
+      requestAnimationFrame(() => rail.style.removeProperty("scroll-behavior"));
+    };
+    requestAnimationFrame(() => jumpTo(step() * count));
+    let normalizing = false;
+    let scrollTimer;
+    rail.addEventListener("scroll", () => {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        const stride = step();
+        if (!stride || normalizing) return;
+        const cycle = stride * originals.length;
+        if (rail.scrollLeft < stride * (count - .5)) {
+          normalizing = true; jumpTo(rail.scrollLeft + cycle); requestAnimationFrame(() => { normalizing = false; });
+        } else if (rail.scrollLeft >= stride * (count + originals.length - .5)) {
+          normalizing = true; jumpTo(rail.scrollLeft - cycle); requestAnimationFrame(() => { normalizing = false; });
+        }
+      }, 90);
+    }, { passive: true, signal });
+    const move = (direction) => rail.scrollTo({ left: rail.scrollLeft + step() * direction, behavior: "smooth" });
+    const previous = rail.parentElement.querySelector(".services-carousel__control--prev");
+    const next = rail.parentElement.querySelector(".services-carousel__control--next");
+    previous.onclick = () => move(-1);
+    next.onclick = () => move(1);
+    const start = () => {
+      if (servicesTimer) clearInterval(servicesTimer);
+      servicesTimer = setInterval(() => move(1), 5000);
+    };
+    const pause = () => {
+      if (servicesTimer) clearInterval(servicesTimer);
+      clearTimeout(servicesResumeTimer);
+      servicesResumeTimer = setTimeout(start, 6500);
+    };
+    rail.addEventListener("pointerdown", pause, { passive: true, signal });
+    rail.addEventListener("focusin", pause, { signal });
+    rail.addEventListener("mouseenter", pause, { signal });
+    rail.addEventListener("mouseleave", start, { signal });
+    start();
   }
 
   function renderEstilistas() {
@@ -384,7 +457,7 @@
     nav.style.display = isSuccess ? "none" : "flex";
     $("#booking-back").style.visibility = b.step === 1 ? "hidden" : "visible";
     const next = $("#booking-next");
-    next.textContent = b.step === 4 ? "Confirmar cita" : "Continuar →";
+    next.querySelector(".booking-next__label").textContent = b.step === 4 ? "Confirmar cita" : "Continuar";
     next.disabled = !canContinue() || b.loading;
   }
 

@@ -462,7 +462,7 @@ button.site-nav__link { border: 0; background: none; cursor: pointer; text-align
   color: var(--cream-dim);
   white-space: nowrap;
 }
-.ticker__item::after { content: "✦"; font-size: 14px; color: var(--rose); }
+.ticker__item::after { content: ""; width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background: var(--rose); }
 .ticker__item b { color: var(--copper); font-weight: 400; }
 @keyframes ticker { to { transform: translateX(-50%); } }
 
@@ -629,8 +629,8 @@ button.site-nav__link { border: 0; background: none; cursor: pointer; text-align
   font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--cream); background: none; border: 0; padding: 0; cursor: pointer;
 }
-.link-arrow::after { content: "→"; color: var(--copper); transition: transform 0.18s ease; }
-.link-arrow:hover::after { transform: translateX(4px); }
+.link-arrow::after { content: ""; width: 7px; height: 7px; border-top: 1px solid var(--copper); border-right: 1px solid var(--copper); transform: rotate(45deg); transition: transform 0.18s ease; }
+.link-arrow:hover::after { transform: rotate(45deg) translate(2px, -2px); }
 
 .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); }
 .step {
@@ -1831,6 +1831,50 @@ body:not(.admin-body) .site-footer .brand__mark { background: #e3c44d; }
   body:not(.admin-body) .estilistas-grid { grid-template-columns: 1fr; }
   body:not(.admin-body) .service-card { min-height: 195px; }
   body:not(.admin-body) .estilista-card__art { height: 265px; }
+}
+
+/* Carrusel de servicios: desplazamiento nativo táctil y avance circular. */
+body:not(.admin-body) .services-carousel { position: relative; }
+body:not(.admin-body) .services-grid {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+  padding: 2px 1px 10px;
+}
+body:not(.admin-body) .services-grid::-webkit-scrollbar { display: none; }
+body:not(.admin-body) .services-grid .service-card { flex: 0 0 calc((100% - 24px) / 3); scroll-snap-align: start; }
+body:not(.admin-body) .services-carousel__control {
+  position: absolute; z-index: 3; top: 50%; display: grid; place-items: center;
+  width: 40px; height: 40px; padding: 0; transform: translateY(-50%);
+  border: 1px solid rgba(48,47,37,.16); border-radius: 50%; background: #fffaf0;
+  color: #302f25; cursor: pointer; box-shadow: 0 4px 14px rgba(48,47,37,.12);
+}
+body:not(.admin-body) .services-carousel__control svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+body:not(.admin-body) .services-carousel__control--prev { left: -18px; }
+body:not(.admin-body) .services-carousel__control--next { right: -18px; }
+body:not(.admin-body) .intro-mark { overflow: hidden; padding: 0; }
+body:not(.admin-body) .intro-mark__logo { display: block; width: 100%; height: 100%; object-fit: contain; }
+body:not(.admin-body) .editorial-banner__flower { width: 250px; height: 250px; fill: none; stroke: rgba(255,250,235,.55); stroke-width: 7; }
+body:not(.admin-body) .site-footer .link-arrow { color: #fffaf0; }
+body:not(.admin-body) .site-footer .link-arrow::after { border-color: #e3c44d; }
+.btn__arrow { width: 14px; height: 14px; flex: 0 0 14px; fill: none; stroke: currentColor; stroke-width: 1.5; vertical-align: middle; }
+@media (max-width: 720px) {
+  body:not(.admin-body) .services-grid { gap: 8px; }
+  body:not(.admin-body) .services-grid .service-card { flex-basis: calc((100% - 8px) / 2); }
+  body:not(.admin-body) .services-carousel__control { width: 34px; height: 34px; }
+  body:not(.admin-body) .services-carousel__control--prev { left: -10px; }
+  body:not(.admin-body) .services-carousel__control--next { right: -10px; }
+  body:not(.admin-body) .intro-mark { width: 120px; }
+  body:not(.admin-body) .editorial-banner__flower { width: 170px; height: 170px; }
+}
+@media (max-width: 370px) {
+  body:not(.admin-body) .services-grid .service-card { flex-basis: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   body:not(.admin-body) .ticker__track { animation: none; }
